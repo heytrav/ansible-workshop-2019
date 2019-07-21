@@ -16,10 +16,7 @@
 
 
 ###### Installing OS package
-
- <asciinema-player autoplay="0"  loop="loop" font-size="medium" speed="1" theme="solarized-light" src="lib/apt-cache-policy-ansible.json" cols="200" rows="10"></asciinema-player>
-* Ansible available with OS typically a bit out of date
-* Generally necessary to add source repo [(apt, yum, etc.)](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+* See documentaton for installing on [your OS](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 
 
 ###### Installing as Python virtualenv
