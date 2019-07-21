@@ -1,3 +1,4 @@
 venv
 clouds.yaml
 clouds-public.yaml
+.DS_Store
