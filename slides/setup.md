@@ -28,14 +28,9 @@
 
 
 ###### Ansible in a Python Virtual Environment
-* Install python requirements
-   ```
-   sudo apt-get install python3-pip virtualenv
-   ```
-  <!-- .element: style="font-size:11pt;"  -->
 * Set up local Python environment
    ```
-   virtualenv -p /usr/bin/python3 ~/venv
+   virtualenv -p `which python3` ~/venv
    ```
 
 
@@ -55,7 +50,7 @@
 
 
 ###### Install openstack dependencies
-* Install some tools that we'll need for the cloud
+* Install some tools that we'll need for the Catalyst Cloud
    ```
    pip install openstacksdk dnspython
    ```
