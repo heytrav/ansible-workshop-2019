@@ -1,13 +1,15 @@
 - name: Setup local environment
   hosts: localhost
-  tasks:
-    - name: Create local cloud file
-      copy:
-        content: "{{ cloud_config }}"
-        dest: "{{ playbook_dir }}/../clouds.yaml"
-        owner: "{{ ansible_env.USER }}"
-        group: "{{ ansible_env.USER }}"
-        mode: 0644
+  vars_prompt:
+    - name: "os_password"
+      prompt: "Enter password"
+  roles:
+    - role: cloud-config
+      openstack_config_directory: "{{ playbook_dir }}/.."
+      cloud_name: catalyst-training
+      os_username: ansible-training@catalyst.net.nz
+      os_project_name: os-training.catalyst.net.nz
+      os_project_id: 0cb6b9b744594a619b0b7340f424858b
 
 
 

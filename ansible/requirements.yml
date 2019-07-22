@@ -1,0 +1,6 @@
+
+- src: https://github.com/heytrav/ansible-setup-openstack.git
+  scm: git
+  name: cloud-config
+  version: master
+
