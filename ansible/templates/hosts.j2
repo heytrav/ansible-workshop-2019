@@ -1,0 +1,49 @@
+localhost ansible_connection=local ansible_python_interpreter='/usr/bin/env python'
+
+[appcluster]
+{{ username }}-web[1:2]
+{{ username }}-db1
+
+[loadbalancer]
+{{ username }}-lb
+
+[bastion]
+{{ username }}-bastion
+
+[web]
+{{ username }}-web[1:2]
+
+[db]
+{{ username }}-db1
+
+
+[publichosts:children]
+bastion
+loadbalancer
+
+[behindbastion:children]
+appcluster
+loadbalancer
+
+[cluster:children]
+bastion
+loadbalancer
+appcluster
+
+
+[blue]
+{{ username }}-web1
+{{ username }}-db1
+
+
+[green]
+{{ username }}-web2
+{{ username }}-lb
+
+[wellington]
+{{ username }}-web1
+{{ username }}-bastion
+{{ username }}-db1
+
+[all:vars]
+prefix={{ username }}

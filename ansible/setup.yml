@@ -1,8 +1,12 @@
 - name: Setup local environment
   hosts: localhost
+  gather_facts: false
   vars_prompt:
     - name: "os_password"
       prompt: "Enter password"
+    - name: "username"
+      prompt: "Enter a username (ascii 3 to 20 chars)"
+      private: no
   roles:
     - role: cloud-config
       openstack_config_directory: "{{ playbook_dir }}/.."
@@ -10,6 +14,21 @@
       os_username: ansible-training@catalyst.net.nz
       os_project_name: os-training.catalyst.net.nz
       os_project_id: 0cb6b9b744594a619b0b7340f424858b
+
+  pre_tasks:
+    - name: Validate username
+      fail:
+        msg: "Not a valid username: {{ username }}"
+      when: not username | regex_search('^[0-9a-z]{5,20}$')
+
+  tasks:
+    - name: Add the hosts file to the cloud example
+      template:
+        src: templates/hosts.j2
+        dest: "{{ playbook_dir }}/inventory/cloud-hosts"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0644'
 
 
 
