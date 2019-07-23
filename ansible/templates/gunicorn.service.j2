@@ -1,0 +1,18 @@
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+PIDFile=/run/gunicorn/pid
+User={{ ansible_user }}
+Group={{ ansible_user }}
+RuntimeDirectory=gunicorn
+WorkingDirectory={{ app_directory }}
+ExecStart={{ app_directory }}/venv/bin/gunicorn --pid /run/gunicorn/pid   \
+          --bind  0.0.0.0:5000 wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

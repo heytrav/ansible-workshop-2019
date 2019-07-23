@@ -1,0 +1,22 @@
+---
+
+machine_security_groups:
+  - {group: "web{{ suffix }}", port: 80, remote_group: "lb{{ suffix }}"}
+  - {group: "web{{ suffix }}", port: 443, remote_group: "lb{{ suffix }}"}
+
+security_groups: "{{ machine_security_groups + main_security_groups }}"
+
+app_directory: /usr/local/app
+
+http_pool_member:
+  name: "{{ inventory_hostname }}"
+  address: "{{ ansible_host }}"
+  protocol_port: 80
+  subnet: "{{ network_name }}"
+  
+https_pool_member:
+  name: "{{ inventory_hostname }}"
+  address: "{{ ansible_host }}"
+  protocol_port: 443
+  subnet: "{{ network_name }}"
+  

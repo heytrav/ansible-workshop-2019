@@ -1,0 +1,277 @@
+---
+- name: Provision a set of hosts in the Catalyst Cloud
+  hosts: localhost
+  gather_facts: false
+  vars:
+    host_set: "{{ groups.cluster }}"
+    security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"
+    security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"
+  tasks:
+    - name: Connect to Catalyst Cloud
+      os_auth:
+        cloud: "{{ cloud_name }}"
+
+    - name: Create keypair
+      os_keypair:
+        cloud: "{{ cloud_name }}"
+        name: "{{ keypair_name }}"
+        public_key: "{{ ssh_public_key }}"
+
+    - name: Create Network
+      os_network:
+        cloud: "{{ cloud_name }}"
+        name: "{{ network_name }}"
+        state: present
+
+    - name: Create subnet
+      os_subnet:
+        cloud: "{{ cloud_name }}"
+        name: "{{ subnet_name }}"
+        network_name: "{{ network_name }}"
+        state: present
+        cidr: "{{ subnet_cidr }}"
+        allocation_pool_start: "{{ subnet_dhcp_start }}"
+        allocation_pool_end: "{{ subnet_dhcp_end }}"
+        ip_version: 4
+        dns_nameservers: "{{ default_nameservers }}"
+
+    - name: Create router
+      os_router:
+        cloud: "{{ cloud_name }}"
+        state: present
+        name: "{{ router_name }}"
+        network: "{{ public_net_name }}"
+        interfaces:
+          - "{{ subnet_name }}"
+
+    - name: Create security groups
+      os_security_group:
+        cloud: "{{ cloud_name }}"
+        state: present
+        name: "{{ item }}"
+      with_items: "{{ security_group_names }}"
+
+    - name: Add rules for security group
+      os_security_group_rule:
+        cloud: "{{ cloud_name }}"
+        state: present
+        security_group: "{{ item.group }}"
+        protocol: "{{ item.proto | default('tcp') }}"
+        port_range_min: "{{ omit if item.port == 'any' else item.port }}"
+        port_range_max: "{{ omit if item.port == 'any' else item.port_end | default(item.port) }}"
+        remote_ip_prefix: "{{ item.remote_ip_prefix | default(omit) }}"
+        remote_group: "{{ item.remote_group | default(omit) }}"
+      with_items: "{{ security_groups }}"
+
+    - name: Create cluster instances
+      os_server:
+        cloud: "{{ cloud_name }}"
+        state: present
+        name: "{{ item }}"
+        image: "{{ default_os_image }}"
+        key_name: "{{ keypair_name  }}"
+        flavor: "{{ default_flavor }}"
+        auto_ip: "{{ hostvars[item].assign_floating_ip | default('no') }}"
+        nics:
+          - net-name: "{{ network_name }}"
+        security_groups: "{{ security_group_names | join(',') }}"
+        meta:
+          inventory_hostname: "{{ item }}"
+          groups: "{{ hostvars[item].group_names | join(',') }}"
+        userdata: |
+                  #cloud-config
+                  datasource:
+                    OpenStack:
+                      metadata_urls: ["http://169.254.169.254"]
+                      max_wait: -1
+                  users:
+                    - name: "{{ hostvars[item].ansible_user }}"
+                      shell: /bin/bash
+                      lock_passwd: true
+                      sudo: ALL=(ALL) NOPASSWD:ALL
+                      ssh_authorized_keys:
+                        - "{{ ssh_public_key }}"
+      register: launch
+      loop: "{{ host_set }}"
+
+    - name: Append info for launched machines to host info
+      add_host:
+        name: "{{ item.openstack.name }}"
+        ansible_host: "{{ item.openstack.public_v4 | default(item.openstack.private_v4, true) }}"
+        public_v4: "{{ item.openstack.public_v4 | default(omit) }}"
+        private_v4: "{{ item.openstack.private_v4 }}"
+      loop: "{{ launch.results }}"
+
+    - name: Make sure loadbalancer uses private v4
+      add_host:
+        name: "{{ item.openstack.name  }}"
+        ansible_host: "{{ item.openstack.private_v4 }}"
+      loop: "{{ launch.results }}"
+      when: item.openstack.name in groups.loadbalancer
+
+    - name: Set ssh args for bastion
+      add_host:
+        name: "{{ item.openstack.name  }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes"
+      loop: "{{ launch.results }}"
+      when: item.openstack.name in groups.bastion
+
+    - name: Set ssh args for rest of cluster
+      add_host:
+        name: "{{ item.openstack.name  }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[item.openstack.name].ansible_user }}@{{ hostvars[groups.bastion[0]].ansible_host }} exec nc -w300 %h %p'"
+      loop: "{{ launch.results }}"
+      when: item.openstack.name in groups.behindbastion
+
+    - name: Remove IP from all machines from known hosts
+      known_hosts:
+        name: "{{ hostvars[item.0][item.1] }}"
+        state: absent
+      with_nested:
+        - "{{ host_set }}"
+        - "{{ ['ansible_host', 'inventory_hostname'] }}"
+
+
+- name: Check for connectivity to bastion
+  hosts: bastion
+  gather_facts: false
+  tasks:
+    - name: Wait for connection to be available on bastion
+      wait_for_connection:
+      delegate_to: localhost
+
+
+- name: Add ssh config and local /etc/hosts mapping for hosts
+  hosts: cluster
+  serial: 1
+  gather_facts: false
+  tasks:
+    - block:
+      - name: "Add cluster to local ~/.ssh/config"
+        blockinfile:
+          dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
+          insertafter: EOF
+          block: |
+            Host {{ ansible_host }}
+                User {{ ansible_user }}
+                StrictHostKeyChecking no
+                {{ ssh_proxy_command }}
+            Host {{ inventory_hostname }}
+                User {{ ansible_user }}
+                StrictHostKeyChecking no
+                {{ ssh_proxy_command }}
+          marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
+
+      - name: "Add host to /etc/hosts"
+        become: yes
+        blockinfile:
+          dest: /etc/hosts
+          insertafter: EOF
+          block: |
+            {{ ansible_host }} {{ inventory_hostname }}
+          marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
+      delegate_to: localhost
+
+
+- name: Add bastion public ip to known_hosts
+  hosts: bastion
+  gather_facts: false
+  tasks:
+    - block:
+        - name: Perform SSH keyscan to add to known_hosts
+          shell: ssh-keyscan {{ ansible_host }}
+          register: bastion_ssh_key
+
+        - name: Add ssh key to known_hosts
+          known_hosts:
+            name: "{{ ansible_host }}"
+            key: "{{ item }}"
+            state: present
+          with_items: "{{ bastion_ssh_key.stdout_lines }}"
+
+        - name: Wait for bastion to be reachable over SSH
+          wait_for_connection:
+
+      delegate_to: localhost
+
+- name: Check connectivity to hosts
+  hosts: cluster:!bastion
+  gather_facts: false
+  tasks:
+
+    - name: Wait for connection to be available on hosts before proceeding
+      wait_for_connection:
+      delegate_to: localhost
+
+- name: Set up the bastion hosts
+  hosts: bastion
+  become: true
+  serial: 1
+  tasks:
+    - name: Add entry to /etc/hosts for all instances
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+      with_items: "{{ groups.appcluster }}"
+
+
+- name: Common setup for all hosts
+  hosts: cluster
+  become: true
+  tasks:
+
+    - name: Add NZ locale to all instances
+      locale_gen:
+        name: en_NZ.UTF-8
+        state: present
+
+- name: Set up the bastion hosts
+  hosts: bastion
+  become: true
+  tasks:
+    - name: Add entry to /etc/hosts for all instances
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+      with_items: "{{ groups.behindbastion }}"
+
+
+- name: Set up web hosts with mapping to backend
+  hosts: web
+  become: true
+  serial: 1
+  tasks:
+    - name: Map each of the frontend hosts in the loadbalancer
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ ansible_host }} frontend{{ group_index }}"
+      delegate_to: "{{ groups.loadbalancer.0 }}"
+
+
+- name: Add mapping for db on app boxes
+  hosts: db
+  become: true
+  tasks:
+
+    - name: Map each app host to speak to db
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ ansible_host }} {{ inventory_hostname }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.web }}"
+
+
+- name: Extra set up for web demo
+  hosts: loadbalancer
+  become: true
+  gather_facts: false
+  tasks:
+
+    - name: "Add fake domain to /etc/hosts"
+      blockinfile:
+        dest: /etc/hosts
+        insertafter: EOF
+        block: |
+          {{ public_v4 }} my-app.cat
+        marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"
+      delegate_to: localhost

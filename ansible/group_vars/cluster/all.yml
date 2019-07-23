@@ -1,0 +1,7 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+ansible_user: ubuntu
+
+security_group_names: "{{ security_groups | map(attribute='group') | unique | list }}"
+ansible_host: "{{ inventory_hostname }}"
+

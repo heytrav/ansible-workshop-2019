@@ -1,0 +1,41 @@
+prefix: "{{ lookup('env', 'PREFIX') }}"
+cloud_name: ansible-training
+suffix: "-{{ prefix }}"
+appname: catapp
+ssh_public_key_file: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
+ssh_public_key: "{{ lookup('file', ssh_public_key_file) }}"
+keypair_name: "training-key{{ suffix }}"
+ssh_remote_cidr: "{{ lookup('dig', 'myip.opendns.com', '@resolver1.opendns.com') + '/32' | default('0.0.0.0/0', true) }}"
+ssh_proxy_command: ""
+network_name: "training-net{{ suffix }}"
+public_net_name: public-net
+subnet_name: "training-subnet{{ suffix }}"
+router_name: "training-router{{ suffix }}"
+subnet_prefix: 192.168.99
+subnet_cidr: "{{ subnet_prefix }}.0/24"
+subnet_dhcp_start: "{{ subnet_prefix }}.98"
+subnet_dhcp_end: "{{ subnet_prefix }}.200"
+
+
+default_os_image: ubuntu-18.04-x86_64
+default_flavor: c1.c1r1
+
+region_nameservers:
+  nz-por-1: [202.78.247.197, 202.78.247.198, 202.78.247.199]
+  nz_wlg_2: [202.78.240.213, 202.78.240.214, 202.78.240.215]
+  nz-hlz-1: [202.78.244.85, 202.78.244.86, 202.78.244.87]
+
+default_nameservers: "{{ region_nameservers['nz-por-1'] }}"
+
+main_security_groups:
+  - {group: "managed{{ suffix }}", port: 22, remote_group: "bastion{{ suffix }}"}
+
+database_user: train_user
+database: cat_pics
+
+host_data:
+  name: "{{ item.openstack.name }}"
+  ansible_host: "{{ item.openstack.public_v4 | default(item.openstack.private_v4, true) }}"
+  public_v4: "{{ item.openstack.public_v4 | default(omit) }}"
+  private_v4: "{{ item.openstack.private_v4 }}"
+  ansible_ssh_common_args: "{{ hostvars[item.openstack.name].ansible_ssh_common_args }}"

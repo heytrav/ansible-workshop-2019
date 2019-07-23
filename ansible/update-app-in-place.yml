@@ -1,0 +1,126 @@
+---
+
+- name: Sort dynamic hosts
+  hosts: all:!localhost
+  gather_facts: false
+  serial: 1
+  tasks:
+
+    - name: Assign host info for bastion
+      add_host:
+        name: "{{ openstack.metadata.inventory_hostname }}"
+        ansible_host: "{{ openstack.public_v4  }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes"
+        groups:
+          - mybastion
+      when:
+        - openstack is defined
+        - openstack.metadata.inventory_hostname is defined
+        - openstack.metadata.inventory_hostname is search(prefix)
+        - "'bastion' in group_names"
+
+- name: Sort dynamic hosts
+  hosts: all:!localhost
+  gather_facts: false
+  serial: 1
+  tasks:
+    - name: Assign groups from host set
+      add_host:
+        name: "{{ openstack.metadata.inventory_hostname }}"
+        ansible_host: "{{ openstack.private_v4 }}"
+        groups: "{{ openstack.metadata.groups }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[openstack.metadata.inventory_hostname].ansible_user }}@{{ hostvars[groups.mybastion[0]].ansible_host }} exec nc -w300 %h %p'"
+      when:
+        - openstack is defined
+        - openstack.metadata.inventory_hostname is defined
+        - openstack.metadata.inventory_hostname is search(prefix)
+        - "'behindbastion' in group_names"
+
+
+    - name: Assign host info for bastion
+      add_host:
+        name: "{{ openstack.metadata.inventory_hostname }}"
+        groups:
+          - rollingupdate
+      when:
+        - openstack is defined
+        - openstack.metadata.inventory_hostname is search(prefix)
+        - openstack.metadata.inventory_hostname is defined
+
+- name: Upgrade application in place
+  become: true
+  hosts: web:&rollingupdate
+  serial: 1
+  vars:
+    database_host: "{{ (groups.db | intersect(groups.rollingupdate))[0] }}"
+  any_errors_fatal: true
+  tags:
+    - app
+  tasks:
+
+    - name: Disable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: disabled
+      delegate_to: "{{ item }}"
+      loop: "{{ groups.loadbalancer | intersect(groups.rollingupdate) }}"
+
+    - name: Checkout application from git
+      git:
+        repo: https://github.com/heytrav/sample-flask-app.git
+        dest: "{{ app_directory }}"
+        version: "{{ app_version | default('master') }}"
+      notify: restart gunicorn
+
+    
+    - name: Add app config
+      template:
+        src: templates/config.py.j2
+        dest: "{{ app_directory }}/config.py"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 0644
+      notify: restart gunicorn
+
+    - name: Install app requirements
+      pip:
+        requirements: "{{ app_directory }}/requirements.txt"
+        virtualenv: "{{ app_directory }}/venv"
+
+    - name: Install gunicorn
+      pip:
+        name: gunicorn
+        virtualenv: "{{ app_directory }}/venv"
+
+    - name: Add systemd config
+      template:
+        src: templates/gunicorn.service.j2
+        dest: /etc/systemd/system/gunicorn.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart gunicorn
+
+    - meta: flush_handlers
+
+    - name: Make sure gunicorn is accepting connections
+      wait_for:
+        port: 5000
+        timeout: 60
+
+    - name: Re-enable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: enabled
+      delegate_to: "{{ item }}"
+      loop: "{{ groups.loadbalancer | intersect(groups.rollingupdate) }}"
+
+
+  handlers:
+    - name: restart gunicorn
+      systemd:
+        name: gunicorn
+        state: restarted
+

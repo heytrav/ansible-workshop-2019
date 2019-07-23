@@ -27,7 +27,6 @@
         src: templates/hosts.j2
         dest: "{{ playbook_dir }}/inventory/cloud-hosts"
         owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
         mode: '0644'
 
 

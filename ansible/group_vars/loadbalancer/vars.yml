@@ -1,0 +1,7 @@
+---
+haproxy_admin: admin
+machine_security_groups:
+  - {group: "lb{{ suffix }}", port: 80, remote_ip_prefix: "0.0.0.0/0"}
+  - {group: "lb{{ suffix }}", port: 443, remote_ip_prefix: "0.0.0.0/0"}
+
+security_groups: "{{ machine_security_groups + main_security_groups }}"

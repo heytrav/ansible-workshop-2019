@@ -1,0 +1,3 @@
+---
+
+group_index: "{{ inventory_hostname | regex_replace('.*(?P<cluster_index>\\d+)$', '\\g<cluster_index>') }}"
