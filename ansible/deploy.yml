@@ -1,0 +1,248 @@
+--- 
+
+- name: Update apt cache on all machines
+  hosts: cluster
+  become: true
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        
+
+
+- name: Set up database machine
+  hosts: db
+  become: true
+  tasks:
+
+    - name: Install packages needed for database
+      apt:
+        name:
+          - postgresql
+          - python3-psycopg2
+        
+    - name: Make postgres listen on external ports
+      lineinfile:
+        path: /etc/postgresql/10/main/postgresql.conf
+        line: "listen_addresses = '*'"
+        insertbefore: '^#listen_addresses'
+      notify: restart postgres
+
+    - name: Add pb_hba rule for hosts
+      lineinfile:
+        path: /etc/postgresql/10/main/pg_hba.conf
+        insertafter: "^# IPv4 local connections"
+        line: "host      all    all   192.168.99.0/24     md5"
+      notify: restart postgres
+
+    - name: Create DB user
+      become: true
+      become_user: postgres
+      postgresql_user:
+        name: "{{ database_user }}"
+        password: "{{ database_password }}"
+        encrypted: yes
+
+
+    - name: Create the database
+      become: true
+      become_user: postgres
+      postgresql_db:
+        name: "{{ database }}"
+        owner: "{{ database_user }}"
+        encoding: UTF8
+        lc_ctype: en_NZ.UTF-8
+        lc_collate: en_NZ.UTF-8
+        template: template0
+
+  handlers:
+    - name: restart postgres
+      systemd:
+        name: postgresql
+        state: restarted
+
+    
+- name: Set up app and database machine
+  hosts: db
+  tasks:
+
+    - name: "Create the pgpass file for user to access database"
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.pgpass"
+        line: "localhost:5432:{{ database }}:{{ database_user }}:{{ database_password }}"
+        create: yes
+        mode: 0600
+
+    - name: Create table for pics 
+      command: |
+        psql -U {{ database_user }} -h localhost 
+        -c "CREATE TABLE IF NOT EXISTS images (id SERIAL primary key not null,
+        image char(200) not null unique)" {{ database }}
+      register: create_table_output
+      changed_when:
+        - create_table_output.rc == 0
+        - create_table_output.stderr is not search('already exists')
+                                                                                                                                                                                                                                  
+    - name: Add images to new table
+      command: |
+        psql -U {{ database_user }} -h localhost 
+        -c "INSERT INTO images (image) VALUES ('{{ item }}')" {{ database }}
+      with_items: "{{ images }}"
+      register: db_insert
+      failed_when:
+        - db_insert.rc != 0 
+        - db_insert.stderr is not search('duplicate')
+      changed_when:
+        - db_insert.rc == 0
+        - db_insert.stdout is search('INSERT')
+
+
+- name: Set up app server
+  hosts: web
+  become: true
+  tasks:
+
+    - name: Install packages needed for application
+      apt:
+        name:
+          - git
+          - python3-dev
+          - python3-pip
+          - python3-psycopg2
+          - python3-setuptools
+          - python3-virtualenv
+        state: present
+
+    - name: Install python libraries
+      pip:
+        name:
+          - pip
+          - virtualenv
+          - virtualenvwrapper
+        state: latest
+          
+
+    - name: Checkout application from git
+      git:
+        repo: https://github.com/heytrav/sample-flask-app.git
+        dest: "{{ app_directory }}"
+        version: "{{ app_version | default('v1') }}"
+      notify: restart gunicorn
+
+    - name: Add app config
+      template:
+        src: templates/config.py.j2
+        dest: "{{ app_directory }}/config.py"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: 0644
+      notify: restart gunicorn
+
+    - name: Install app requirements
+      pip:
+        requirements: "{{ app_directory }}/requirements.txt"
+        virtualenv: "{{ app_directory }}/venv"
+
+    - name: Install gunicorn
+      pip:
+        name: gunicorn
+        virtualenv: "{{ app_directory }}/venv"
+
+    - name: Add systemd config
+      template:
+        src: templates/gunicorn.service.j2
+        dest: /etc/systemd/system/gunicorn.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart gunicorn
+
+  handlers:
+    - name: restart gunicorn
+      systemd:
+        name: gunicorn
+        state: restarted
+
+
+- name: Set up nginx on web server
+  hosts: web
+  become: true
+  tasks:
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Add nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/sites-available/cats.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart nginx
+
+    - name: Symlink nginx conf to activate 
+      file:
+        src: /etc/nginx/sites-available/cats.conf
+        dest: /etc/nginx/sites-enabled/cats.conf
+        state: link
+
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+
+
+- name: Set up loadbalancer
+  hosts: loadbalancer
+  become: true
+  tasks:
+
+
+    - name: Install haproxy
+      apt:
+        name: haproxy
+        state: present
+
+    - name: Add haproxy config to loadbalancer
+      template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart haproxy
+
+    - name: Add lines to rsyslog conf
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp }}"
+        insertbefore: EOF
+      with_items:
+        - {line: "$ModLoad imudp", regexp: '^#?\$ModLoad.*'}
+        - {line: "$UDPServerAddress 127.0.0.1", regexp: '^#?\$UDPServerAddress.*'}
+        - {line: "$UDPServerRun 514", regexp: '^#?\$UDPServerRun.*'}
+      notify: restart rsyslog
+
+    - name: Copy rsyslog config for haproxy
+      copy:
+        src: files/rsyslog-haproxy.conf
+        dest: /etc/rsyslog.d/haproxy.conf
+
+  handlers:
+    - name: restart haproxy
+      systemd: 
+        name: haproxy
+        state: restarted
+
+    - name: restart rsyslog
+      service:
+        name: rsyslog
+        state: restarted
+
