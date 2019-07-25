@@ -1,4 +1,7 @@
-localhost ansible_connection=local ansible_python_interpreter='/usr/bin/env python'
+localhost
+
+[dev]
+localhost
 
 [appcluster]
 pycon-web[1:2]
