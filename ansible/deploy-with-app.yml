@@ -126,7 +126,7 @@
       git:
         repo: https://github.com/heytrav/sample-flask-app.git
         dest: "{{ app_directory }}"
-        version: "{{ app_version | default('v1') }}"
+        version: "{{ app_version | default('master') }}"
       notify: restart gunicorn
 
     - name: Add app config
@@ -142,6 +142,7 @@
       pip:
         requirements: "{{ app_directory }}/requirements.txt"
         virtualenv: "{{ app_directory }}/venv"
+        virtualenv_python: /usr/bin/python3
 
     - name: Install gunicorn
       pip:

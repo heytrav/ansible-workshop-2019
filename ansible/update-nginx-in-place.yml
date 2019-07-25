@@ -1,0 +1,50 @@
+---
+- name: Upgrade nginx in place
+  become: true
+  hosts: web
+  serial: 1
+  any_errors_fatal: true
+  tags:
+    - web
+  tasks:
+    - name: Disable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: disabled
+      delegate_to: "{{ groups.loadbalancer[0] }}"
+
+    - name: Add nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/sites-available/cats.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart nginx
+
+    - name: Symlink nginx conf to activate 
+      file:
+        src: /etc/nginx/sites-available/cats.conf
+        dest: /etc/nginx/sites-enabled/cats.conf
+        state: link
+
+    - meta: flush_handlers
+
+    - name: Make sure nginx is accepting connections
+      wait_for:
+        port: 80
+
+    - name: Re-enable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: enabled
+      delegate_to: "{{ groups.loadbalancer[0] }}"
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+

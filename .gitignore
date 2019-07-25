@@ -1,5 +1,2 @@
 venv
-clouds.yaml
-clouds-public.yaml
 .DS_Store
-ansible/inventory/cloud-hosts

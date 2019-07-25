@@ -9,23 +9,23 @@
   tasks:
     - name: Connect to Catalyst Cloud
       os_auth:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name | default(omit) }}"
 
     - name: Create keypair
       os_keypair:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         name: "{{ keypair_name }}"
         public_key: "{{ ssh_public_key }}"
 
     - name: Create Network
       os_network:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         name: "{{ network_name }}"
         state: present
 
     - name: Create subnet
       os_subnet:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         name: "{{ subnet_name }}"
         network_name: "{{ network_name }}"
         state: present
@@ -37,7 +37,7 @@
 
     - name: Create router
       os_router:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         name: "{{ router_name }}"
         network: "{{ public_net_name }}"
@@ -46,14 +46,14 @@
 
     - name: Create security groups
       os_security_group:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         name: "{{ item }}"
       with_items: "{{ security_group_names }}"
 
     - name: Add rules for security group
       os_security_group_rule:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         security_group: "{{ item.group }}"
         protocol: "{{ item.proto | default('tcp') }}"
@@ -65,7 +65,7 @@
 
     - name: Create cluster instances
       os_server:
-        cloud: "{{ cloud_name }}"
+        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         name: "{{ item }}"
         image: "{{ default_os_image }}"
