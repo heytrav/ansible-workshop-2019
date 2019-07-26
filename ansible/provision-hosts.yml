@@ -247,6 +247,16 @@
         line: "{{ ansible_host }} frontend{{ group_index }}"
       delegate_to: "{{ groups.loadbalancer.0 }}"
 
+- name: Set up web hosts with mapping to backend
+  hosts: app
+  become: true
+  tasks:
+
+    - name: Map each frontend host to speak to a specific backend
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ ansible_host }} backend"
+      delegate_to: "{{ prefix }}-web{{ group_index }}"
 
 - name: Add mapping for db on app boxes
   hosts: db
@@ -258,7 +268,7 @@
         dest: /etc/hosts
         line: "{{ ansible_host }} {{ inventory_hostname }}"
       delegate_to: "{{ item }}"
-      with_items: "{{ groups.web }}"
+      with_items: "{{ groups.app }}"
 
 
 - name: Extra set up for web demo

@@ -9,6 +9,9 @@
   any_errors_fatal: true
   tags:
     - app
+  vars:
+    database_host: "{{ (groups.db | intersect(groups.rollingupdate))[0] }}"
+
   tasks:
 
     - name: Disable application at load balancer
