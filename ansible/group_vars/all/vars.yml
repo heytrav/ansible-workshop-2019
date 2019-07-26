@@ -1,5 +1,5 @@
 prefix: pycon
-cloud_name: catalystcloud
+#cloud_name: catalystcloud
 suffix: "-{{ prefix }}"
 appname: catapp
 ssh_public_key_file: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
