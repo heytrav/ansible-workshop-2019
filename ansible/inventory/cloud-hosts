@@ -1,4 +1,5 @@
-localhost
+localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env
+python"
 
 [dev]
 localhost
@@ -6,7 +7,7 @@ localhost
 [appcluster]
 pycon-web[1:2]
 pycon-app[1:2]
-pycon-db1
+pycon-db
 
 [loadbalancer]
 pycon-lb
@@ -18,7 +19,7 @@ pycon-bastion
 pycon-web[1:2]
 
 [db]
-pycon-db1
+pycon-db
 
 [app]
 pycon-app[1:2]
@@ -46,7 +47,6 @@ pycon-app1
 pycon-web2
 pycon-app2
 
-[wellington]
-pycon-web1
-pycon-app1
-pycon-db1
+[blue_green:children]
+blue
+green

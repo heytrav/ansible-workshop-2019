@@ -1,0 +1,13 @@
+- name: Add host to blue and green groups
+  hosts: localhost
+  gather_facts: false
+  vars:
+    active: "{{ groups[ live | default('blue_green') ] }}"
+
+  tasks:
+    - name: Add active hosts to group
+      add_host:
+        name: "{{ item }}"
+        groups:
+          - active
+      with_items: "{{ active | groups.blue_green }}"
