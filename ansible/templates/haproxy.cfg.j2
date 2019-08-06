@@ -37,5 +37,5 @@ backend catapp-backend
     option forwardfor
     cookie SRVNAME insert
 {% for item in groups.web %}
-    server {{ item }} {{ hostvars[item].ansible_default_ipv4.address }}:80 cookie S{{ loop.index }} check
+    server {{ item }} {{ hostvars[item].ansible_host }}:80 cookie S{{ loop.index }} check
 {% endfor %}

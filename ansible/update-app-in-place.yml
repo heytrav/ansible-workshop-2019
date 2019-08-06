@@ -2,6 +2,22 @@
 
 - import_playbook: sort-inventory-hosts.yml
 
+
+- name: Sort dynamic hosts into rollingupgrade group
+  hosts: all:!controller
+  gather_facts: false
+  serial: 1
+  tasks:
+    - name: Assign host info for bastion
+      add_host:
+        name: "{{ openstack.metadata.inventory_hostname }}"
+        groups:
+          - rollingupdate
+      when:
+        - openstack is defined
+        - openstack.metadata.inventory_hostname is search(prefix)
+        - openstack.metadata.inventory_hostname is defined
+
 - name: Upgrade application in place
   become: true
   hosts: app:&rollingupdate

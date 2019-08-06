@@ -10,4 +10,4 @@
         name: "{{ item }}"
         groups:
           - active
-      with_items: "{{ active | groups.blue_green }}"
+      with_items: "{{ active | default(groups.blue_green) }}"

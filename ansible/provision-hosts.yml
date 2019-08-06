@@ -1,6 +1,6 @@
 ---
 - name: Provision a set of hosts in the Catalyst Cloud
-  hosts: dev
+  hosts: localhost
   gather_facts: false
   vars:
     host_set: "{{ groups.cluster }}"
@@ -141,36 +141,36 @@
       delegate_to: localhost
 
 
-- name: Add ssh config and local /etc/hosts mapping for hosts
-  hosts: cluster
-  serial: 1
-  gather_facts: false
-  tasks:
-    - block:
-      - name: "Add cluster to local ~/.ssh/config"
-        blockinfile:
-          dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
-          insertafter: EOF
-          block: |
-            Host {{ ansible_host }}
-                User {{ ansible_user }}
-                StrictHostKeyChecking no
-                {{ ssh_proxy_command }}
-            Host {{ inventory_hostname }}
-                User {{ ansible_user }}
-                StrictHostKeyChecking no
-                {{ ssh_proxy_command }}
-          marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
+#- name: Add ssh config and local /etc/hosts mapping for hosts
+  #hosts: cluster
+  #serial: 1
+  #gather_facts: false
+  #tasks:
+    #- block:
+      #- name: "Add cluster to local ~/.ssh/config"
+        #blockinfile:
+          #dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
+          #insertafter: EOF
+          #block: |
+            #Host {{ ansible_host }}
+                #User {{ ansible_user }}
+                #StrictHostKeyChecking no
+                #{{ ssh_proxy_command }}
+            #Host {{ inventory_hostname }}
+                #User {{ ansible_user }}
+                #StrictHostKeyChecking no
+                #{{ ssh_proxy_command }}
+          #marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
 
-      - name: "Add host to /etc/hosts"
-        become: yes
-        blockinfile:
-          dest: /etc/hosts
-          insertafter: EOF
-          block: |
-            {{ ansible_host }} {{ inventory_hostname }}
-          marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
-      delegate_to: localhost
+      #- name: "Add host to /etc/hosts"
+        #become: yes
+        #blockinfile:
+          #dest: /etc/hosts
+          #insertafter: EOF
+          #block: |
+            #{{ ansible_host }} {{ inventory_hostname }}
+          #marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
+      #delegate_to: localhost
 
 
 - name: Add bastion public ip to known_hosts
