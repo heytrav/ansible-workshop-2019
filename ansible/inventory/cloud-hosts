@@ -27,7 +27,7 @@ pycon-app[1:2]
 bastion
 loadbalancer
 
-[behindbastion:children]
+[private_net:children]
 appcluster
 loadbalancer
 
@@ -49,3 +49,12 @@ pycon-app2
 [blue_green:children]
 blue
 green
+
+# Groups used for processing dynamic inventory
+[deployed_private]
+
+[deployed_bastion]
+
+[deployed_cluster:children]
+deployed_bastion
+deployed_private

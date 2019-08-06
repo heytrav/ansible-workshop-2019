@@ -5,7 +5,7 @@
   vars:
     app_prefix: "{{ prefix | mandatory }}"
 
-- name: Provision a set of hosts in the Catalyst Cloud
+- name: Teardown Catalyst Cloud hosts
   hosts: localhost
   gather_facts: false
   vars:

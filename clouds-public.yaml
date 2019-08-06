@@ -1,4 +1,0 @@
-public-clouds:
-  catalystcloud:
-    auth:
-      auth_url: https://api.cloud.catalyst.net.nz:5000/v3

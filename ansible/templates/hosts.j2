@@ -21,7 +21,7 @@ localhost ansible_connection=local ansible_python_interpreter='/usr/bin/env pyth
 bastion
 loadbalancer
 
-[behindbastion:children]
+[private_net:children]
 appcluster
 loadbalancer
 

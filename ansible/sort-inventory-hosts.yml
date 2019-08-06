@@ -1,6 +1,6 @@
 
-- name: Sort hosts and pick out bastion
-  hosts: all:!controller
+- name: Process dynamic inventory for bastion hosts
+  hosts: bastion
   gather_facts: false
   serial: 1
   vars:
@@ -13,20 +13,18 @@
         ansible_host: "{{ openstack.public_v4  }}"
         ansible_ssh_common_args: "{{ ssh_common_args }}"
         groups:
-          - deploy
-          - mybastion
+          - deployed_bastion
       when:
         - openstack is defined
         - openstack.metadata.inventory_hostname is defined
         - openstack.metadata.inventory_hostname is search(prefix)
-        - "'bastion' in group_names"
 
-- name: Sort hosts and pick out bastion
-  hosts: all:!controller
+- name: Process dynamic inventory for private hosts
+  hosts: private_net
   gather_facts: false
   serial: 1
   vars:
-    ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[openstack.metadata.inventory_hostname].ansible_user }}@{{ hostvars[groups.mybastion[0]].ansible_host }} exec nc -w300 %h %p'" 
+    ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[openstack.metadata.inventory_hostname].ansible_user }}@{{ hostvars[groups.deployed_bastion[0]].ansible_host }} exec nc -w300 %h %p'" 
   tasks:
     - name: Assign groups from host set
       add_host:
@@ -35,9 +33,8 @@
         groups: "{{ openstack.metadata.groups }}"
         ansible_ssh_common_args: "{{ ssh_common_args }}"
         groups:
-          - deploy
+          - deployed_private
       when:
         - openstack is defined
         - openstack.metadata.inventory_hostname is defined
         - openstack.metadata.inventory_hostname is search(prefix)
-        - "'behindbastion' in group_names"
