@@ -26,7 +26,6 @@
         update_cache: yes
         
 
-
 - name: Set up database machine
   hosts: db:&deployed_cluster
   become: true

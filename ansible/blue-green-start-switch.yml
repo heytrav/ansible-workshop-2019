@@ -1,18 +1,4 @@
-- import_playbook: sort-inventory-hosts.yml 
-
-- name: Add host to blue and green groups
-  hosts: localhost
-  gather_facts: false
-  vars:
-    active: "{{ groups[ live | default('blue_green') ] | intersect(groups.deployed_cluster) }}"
-
-  tasks:
-    - name: Add active hosts to group
-      add_host:
-        name: "{{ item }}"
-        groups:
-          - active
-      with_items: "{{ active | default(groups.blue_green) }}"
+---
 
 - name: Enable backend application in active group
   hosts: app:&deployed_cluster:&active
