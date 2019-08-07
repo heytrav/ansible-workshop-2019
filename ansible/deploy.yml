@@ -2,7 +2,6 @@
 # ansible-playbook -i ansible/inventory ansible/deploy.yml
 
 - import_playbook: sort-inventory-hosts.yml 
-- import_playbook: blue-green.yml
 
 - name: Update apt cache on all machines
   hosts: cluster:&deployed_cluster
@@ -263,17 +262,4 @@
       service:
         name: rsyslog
         state: restarted
-
-- name: Shut down hosts not in active blue green group
-  hosts: web:&deployed_cluster:!active
-  become: true
-  tasks:
-    - name: Disable application at load balancer
-      haproxy:
-        backend: catapp-backend
-        host: "{{ inventory_hostname }}"
-        state: disabled
-      delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
-
 

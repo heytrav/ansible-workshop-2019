@@ -1,3 +1,5 @@
+- import_playbook: sort-inventory-hosts.yml 
+
 - name: Add host to blue and green groups
   hosts: localhost
   gather_facts: false
@@ -11,3 +13,47 @@
         groups:
           - active
       with_items: "{{ active | default(groups.blue_green) }}"
+
+- name: Enable backend application in active group
+  hosts: app:&deployed_cluster:&active
+  become: true
+  tasks:
+    - name: Start gunicorn
+      systemd:
+        name: gunicorn
+        state: started
+
+- name: Enable traffic to active group
+  hosts: web:&deployed_cluster:&active
+  become: true
+  tasks:
+    - name: Enable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: enabled
+      delegate_to: "{{ item }}"
+      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+
+
+- name: Stop traffic to inactive group
+  hosts: web:&deployed_cluster:!active
+  become: true
+  tasks:
+    - name: Disable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: disabled
+      delegate_to: "{{ item }}"
+      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+
+- name: Shut down backend application in inactive group
+  hosts: app:&deployed_cluster:!active
+  become: true
+  tasks:
+    - name: Stop gunicorn
+      systemd:
+        name: gunicorn
+        state: stopped
+
