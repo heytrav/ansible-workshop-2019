@@ -1,5 +1,19 @@
 --- 
 # ansible-playbook -i ansible/inventory ansible/deploy.yml
+#
+# Extra args:
+#    -e app_version= 
+#         v1 or v2 or v3 (existing version of app)
+#
+# Tags:
+#      db: 
+#         Install and setup database related tasks
+#      app:
+#         Install and setup app related tasks
+#      web:
+#         Install and configure nginx
+#      lb:
+#         Install and configure haproxy
 
 - import_playbook: sort-inventory-hosts.yml 
 

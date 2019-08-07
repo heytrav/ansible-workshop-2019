@@ -1,4 +1,9 @@
 ---
+# ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v2 
+#
+# Extra args:
+#    -e app_version= 
+#         v1 or v2 or v3 (existing version of app)
 
 - import_playbook: sort-inventory-hosts.yml
 
