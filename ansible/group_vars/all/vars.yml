@@ -4,13 +4,13 @@ suffix: "-{{ prefix }}"
 appname: catapp
 ssh_public_key_file: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa.pub"
 ssh_public_key: "{{ lookup('file', ssh_public_key_file) }}"
-keypair_name: "training-key{{ suffix }}"
+keypair_name: "pycon-key{{ suffix }}"
 ssh_remote_cidr: "{{ lookup('dig', 'myip.opendns.com', '@resolver1.opendns.com') + '/32' | default('0.0.0.0/0', true) }}"
 ssh_proxy_command: ""
-network_name: "training-net{{ suffix }}"
+network_name: "pycon-net{{ suffix }}"
 public_net_name: public-net
-subnet_name: "training-subnet{{ suffix }}"
-router_name: "training-router{{ suffix }}"
+subnet_name: "pycon-subnet{{ suffix }}"
+router_name: "pycon-router{{ suffix }}"
 subnet_prefix: 192.168.99
 subnet_cidr: "{{ subnet_prefix }}.0/24"
 subnet_dhcp_start: "{{ subnet_prefix }}.98"

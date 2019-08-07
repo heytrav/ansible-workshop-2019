@@ -1,10 +1,11 @@
 --- 
+# ansible-playbook -i ansible/inventory ansible/deploy.yml
 
 - import_playbook: sort-inventory-hosts.yml 
 - import_playbook: blue-green.yml
 
 - name: Update apt cache on all machines
-  hosts: cluster:&deploy
+  hosts: cluster:&deployed_cluster
   become: true
   tasks:
     - name: Update apt cache
@@ -14,7 +15,7 @@
 
 
 - name: Set up database machine
-  hosts: db:&deploy
+  hosts: db:&deployed_cluster
   become: true
   tasks:
 
@@ -66,7 +67,7 @@
 
     
 - name: Set up app and database machine
-  hosts: db:&deploy
+  hosts: db:&deployed_cluster
   tasks:
 
     - name: "Create the pgpass file for user to access database"
@@ -101,7 +102,7 @@
 
 
 - name: Set up app server
-  hosts: app:&deploy
+  hosts: app:&deployed_cluster
   become: true
   tasks:
 
@@ -168,7 +169,7 @@
 
 
 - name: Set up nginx on web server
-  hosts: web:&deploy
+  hosts: web:&deployed_cluster
   become: true
   tasks:
 
@@ -202,7 +203,7 @@
 
 
 - name: Set up loadbalancer
-  hosts: loadbalancer:&deploy
+  hosts: loadbalancer:&deployed_cluster
   become: true
   tasks:
 

@@ -1,4 +1,5 @@
 ---
+#  ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml -
 - name: Provision a set of hosts in the Catalyst Cloud
   hosts: localhost
   gather_facts: false
@@ -233,7 +234,7 @@
       lineinfile:
         dest: /etc/hosts
         line: "{{ hostvars[item].ansible_host }} {{ item }}"
-      with_items: "{{ groups.private_net
+      with_items: "{{ groups.private_net }}"
 
 
 - name: Set up web hosts with mapping to backend
