@@ -2,7 +2,7 @@
   hosts: localhost
   gather_facts: false
   vars:
-    active: "{{ groups[ live | default('blue_green') ] }}"
+    active: "{{ groups[ live | default('blue_green') ] | intersect(groups.deployed_cluster) }}"
 
   tasks:
     - name: Add active hosts to group

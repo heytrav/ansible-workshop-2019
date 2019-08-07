@@ -17,6 +17,9 @@
 - name: Set up database machine
   hosts: db:&deployed_cluster
   become: true
+  tags:
+    - deploy
+    - db
   tasks:
 
     - name: Install packages needed for database
@@ -68,6 +71,9 @@
     
 - name: Set up app and database machine
   hosts: db:&deployed_cluster
+  tags:
+    - deploy
+    - db
   tasks:
 
     - name: "Create the pgpass file for user to access database"
@@ -104,6 +110,9 @@
 - name: Set up app server
   hosts: app:&deployed_cluster
   become: true
+  tags:
+    - deploy
+    - app
   tasks:
 
     - name: Install packages needed for application
@@ -171,6 +180,9 @@
 - name: Set up nginx on web server
   hosts: web:&deployed_cluster
   become: true
+  tags:
+    - deploy
+    - web
   tasks:
 
     - name: Install nginx
@@ -205,6 +217,9 @@
 - name: Set up loadbalancer
   hosts: loadbalancer:&deployed_cluster
   become: true
+  tags:
+    - deploy
+    - lb
   tasks:
 
     - name: Install haproxy
@@ -248,4 +263,17 @@
       service:
         name: rsyslog
         state: restarted
+
+- name: Shut down hosts not in active blue green group
+  hosts: web:&deployed_cluster:!active
+  become: true
+  tasks:
+    - name: Disable application at load balancer
+      haproxy:
+        backend: catapp-backend
+        host: "{{ inventory_hostname }}"
+        state: disabled
+      delegate_to: "{{ item }}"
+      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+
 
