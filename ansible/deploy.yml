@@ -1,5 +1,5 @@
 --- 
-# ansible-playbook -i ansible/inventory ansible/deploy.yml
+# ansible-playbook  ansible/deploy.yml
 #
 # Extra args:
 #    -e app_version= 
