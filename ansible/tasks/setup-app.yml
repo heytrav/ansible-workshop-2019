@@ -1,0 +1,36 @@
+
+- name: Checkout application from git
+  git:
+    repo: https://github.com/heytrav/sample-flask-app.git
+    dest: "{{ app_directory }}"
+    version: "{{ app_version | default('v1') }}"
+  notify: restart gunicorn
+
+
+- name: Add app config
+  template:
+    src: templates/config.py.j2
+    dest: "{{ app_directory }}/config.py"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  notify: restart gunicorn
+
+- name: Install app requirements
+  pip:
+    requirements: "{{ app_directory }}/requirements.txt"
+    virtualenv: "{{ app_directory }}/venv"
+
+- name: Install gunicorn
+  pip:
+    name: gunicorn
+    virtualenv: "{{ app_directory }}/venv"
+
+- name: Add systemd config
+  template:
+    src: templates/gunicorn.service.j2
+    dest: /etc/systemd/system/gunicorn.service
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart gunicorn
