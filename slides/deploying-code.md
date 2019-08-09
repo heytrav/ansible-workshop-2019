@@ -4,28 +4,36 @@
 #### Deploying applications
 
 <pre  class="fragment" data-fragment-index="0"><code data-trim data-noescape>
-cd $INTERMED_ANSIBLE_DIR/deploying-code
-tree
+ansible
+├── deploy.yml
+├── files
+│   .
+├── group_vars
+│   ├── all
+    .
+│   └── web.yml
+├── inventory
+│   ├── cloud-hosts
 .
-├── <mark>provision-hosts.yml</mark>
-├── <mark>deploy.yml</mark>
-templates
-└── index.html
-wsgi.py
+├── provision-hosts.yml
 </code></pre>
-
-* This lesson sets up the<!-- .element: class="fragment" data-fragment-index="1" --> _Cat Pic of the Day_ application 
-* We'll be using this demonstrate deploying and later upgrading applications
-  <!-- .element: class="fragment" data-fragment-index="2" -->
 
 
 #### Basic application
 
 ![Basic app](img/simple-project-app.svg "opt title")
+* This lesson sets up the<!-- .element: class="fragment" data-fragment-index="1" --> _Cat Pic of the Day_ application 
+  <!-- .element: class="fragment" data-fragment-index="2" -->
 * Web server running nginx
 * App server running a Python Flask web application
 * A database
 * All behind a loadbalancer
+
+
+##### Actual architecture
+* No need for each host to have a public IP
+* A little more secure if all hosts are not public
+![architecture](img/application-security.svg "Networking security") 
 
 
 #### Provisioning machines
@@ -74,7 +82,6 @@ wsgi.py
 
 #### Bastion host
 
-![Network security Diagram](img/application-security.svg "Networking security") 
 * Only one machine is directly accessible by SSH <!-- .element: class="fragment" data-fragment-index="0" -->
 * This host is a<!-- .element: class="fragment" data-fragment-index="1" --> _bastion_ or _jump host_ 
 * All other hosts can only be reached from<!-- .element: class="fragment" data-fragment-index="2" -->

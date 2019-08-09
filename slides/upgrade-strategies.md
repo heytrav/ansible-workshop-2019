@@ -1,8 +1,7 @@
 ### Upgrade strategies
 
 
-#### Upgrading our application
-##### What can go wrong?
+####  What can go wrong?
 * Without some kind of redundancy, we risk of disrupting entire operation <!-- .element: class="fragment" data-fragment-index="0" -->
 * Could be bad for business <!-- .element: class="fragment" data-fragment-index="1" -->
 
@@ -14,46 +13,8 @@
 
 
 #### Upgrade Strategies
+* In-place rolling upgrade
 * Blue-Green
-* Expand and Contract
-* Rolling Deployment
-
-
-#### Blue-Green Deployments
-
-
-
-#### Expand and contract
-
-* This strategy involves deploying updates on completely new hosts
-* Advantages
-  - Machines are more up-to-date
-  - No need to worry about config not managed by Ansible
-  - Avoid configuration drift
-  - Rolling back much easier
-
-
-#### Upgrading by expanding contract
-
-![cluster-pre-upgrade](img/expand-contract-pre-upgrade.svg "Pre upgrade")
-
-
-#### Expand phase
-
-![cluster-upgrade-step1](img/expand-contract-upgrade.svg "During upgrade") <!-- .element height="50%" width="50%" -->
-
-* Deploy application update to new machines <!-- .element: class="fragment" data-fragment-index="0" -->
-* Current version remains active <!-- .element: class="fragment" data-fragment-index="1" -->
-
-
-#### Change to new cluster
-
-![cluster-upgrade-step2](img/expand-contract-upgrade-2.svg "Post upgrade")<!-- .element height="40%" width="40%" -->
-
-* Once new cluster finished and healthy: <!-- .element: class="fragment" data-fragment-index="0" -->
-  - Change DNS to point at new cluster
-  - Stop services on old cluster
-* Decommision old cluster <!-- .element: class="fragment" data-fragment-index="1" -->
 
 
 #### In-place rolling upgrade
@@ -80,6 +41,13 @@ width="50%" height="50%"-->
 
 * Repeat process across pool <!-- .element: class="fragment" data-fragment-index="0" -->
 * Mixed versions will be running for a period of time <!-- .element: class="fragment" data-fragment-index="1" -->
+
+
+#### Blue Green Deployments
+![start](img/blue-green-state0.png "Blue Green Start")
+* Start deployment with traffic going through *blue* hosts
+
+
 
 
 #### Summary
