@@ -31,20 +31,64 @@ ansible
 
 
 ##### Actual architecture
-* No need for each host to have a public IP
-* A little more secure if all hosts are not public
+* Use a *bastion* host for SSH access to cluster
+  * No need for each host to have a public IP
+  * A little more secure if all hosts are not public
 ![architecture](img/application-security.svg "Networking security") 
+
 
 
 #### Provisioning machines
 
 * The<!-- .element: class="fragment" data-fragment-index="0" --> `provision-hosts.yml` playbook contains several plays 
+   ```
+- name: Provision a set of hosts in the Catalyst Cloud
+  hosts: localhost
+
+- name: Check for connectivity to bastion
+  hosts: bastion
+
+- name: Add bastion public ip to known_hosts
+  hosts: bastion
+
+- name: Check connectivity to hosts
+  hosts: cluster:!bastion
+
+- name: Common setup for all hosts
+  hosts: cluster
+
+- name: Set up the bastion hosts
+  hosts: bastion
+
+
+- name: Set up web hosts with mapping to backend
+  hosts: web
+
+- name: Set up web hosts with mapping to backend
+  hosts: app
+
+- name: Add mapping for db on app boxes
+  hosts: db
+
+
+- name: Extra set up for web demo
+  hosts: loadbalancer
+   ```
   * Preflight plays to set up variables <!-- .element: class="fragment" data-fragment-index="1" -->
   * Provision openstack instances <!-- .element: class="fragment" data-fragment-index="3" -->
     - Create network infrastructure <!-- .element: class="fragment" data-fragment-index="4" -->
     - Create servers <!-- .element: class="fragment" data-fragment-index="5" -->
     - Set up necessary security groups <!-- .element: class="fragment" data-fragment-index="6" -->
   * Basic setup for machines <!-- .element: class="fragment" data-fragment-index="7" -->
+
+
+#### Provision cloud machines
+
+Let's go ahead and provision our machines
+```
+ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml -K 
+```
+<!-- .element: style="font-size:12pt;"  -->
 
 
 #### Provisioning
@@ -164,13 +208,6 @@ train-app[1:2]
 </div>
 
 
-#### Provision cloud machines
-
-Let's go ahead and provision our machines
-```
-ansible-playbook   -K provision-hosts.yml deploy.yml -e app_version=v1
-```
-<!-- .element: style="font-size:12pt;"  -->
 
 
 #### Deploying our application
