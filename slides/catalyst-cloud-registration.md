@@ -1,15 +1,28 @@
-### Catalyst Cloud Registration
-* [https://dashboard.cloud.catalyst.net.nz](https://dashboard.cloud.catalyst.net.nz)
+### Cloud Provider Account
+
+
+#### Catalyst Cloud Registration
+* Open [https://dashboard.cloud.catalyst.net.nz](https://dashboard.cloud.catalyst.net.nz)
+* Sign up for an account
 * Enter promo code
   - TODO: enter promo code here
   
-![config-download](img/os-config-download.png "Download OS config")
 
 
-### Load Config
-* Activate the OpenStack config in your terminal
-  ```
-  source youraccount.catalyst.net.nz-openrc.sh
-  Please enter your OpenStack Password for project ...
-  *******
-  ```
+#### Download OpenStack credentials
+* Download OpenStack rc file![config-download](img/os-config-download.png "Download OS config") <!-- .element: class="img-right" width="80%" -->
+
+
+#### OpenStack SDK login
+* Your terminal will need to be logged in to interact with OpenStack on the Catalyst
+  Cloud
+* Activate the OpenStack config in your terminal <!-- .element: class="fragment" data-fragment-index="0" -->
+* This will prompt you to enter your Catalyst Cloud password <!-- .element: class="fragment" data-fragment-index="1" -->
+    <pre><code data-trim data-noescape>
+    source <mark>account name</mark>.catalyst.net.nz-openrc.sh
+    Please enter your OpenStack Password for project ...
+    *******
+    </code></pre>
+
+Note: This will need to be done each time a new terminal is opened if
+particpants want to connect via openstacksdk

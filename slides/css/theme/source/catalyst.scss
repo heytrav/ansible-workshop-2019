@@ -1,0 +1,558 @@
+/**
+Catalyst themed reveal.js presentation
+- Based on the simple theme > 2012 Owen Versteeg, https://github.com/StereotypicalApps. It is MIT licensed.
+ */
+
+
+// Default mixins and settings -----------------
+@import "../template/mixins";
+@import "../template/settings";
+// ---------------------------------------------
+
+// Include theme-specific fonts
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-regular-webfont.eot');
+    src:url('../../lib/font/lato-regular-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-regular-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-regular-webfont.woff') format('woff'),
+        url('../../lib/font/lato-regular-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-regular-webfont.svg#latoregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-italic-webfont.eot');
+    src:url('../../lib/font/lato-italic-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-italic-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-italic-webfont.woff') format('woff'),
+        url('../../lib/font/lato-italic-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-italic-webfont.svg#latoitalic') format('svg');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-light-webfont.eot');
+    src:url('../../lib/font/lato-light-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-light-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-light-webfont.woff') format('woff'),
+        url('../../lib/font/lato-light-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-light-webfont.svg#latolight') format('svg');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-lightitalic-webfont.eot');
+    src:url('../../lib/font/lato-lightitalic-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-lightitalic-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-lightitalic-webfont.woff') format('woff'),
+        url('../../lib/font/lato-lightitalic-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-lightitalic-webfont.svg#latolight_italic') format('svg');
+    font-weight: 300;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-hairline-webfont.eot');
+    src:url('../../lib/font/lato-hairline-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-hairline-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-hairline-webfont.woff') format('woff'),
+        url('../../lib/font/lato-hairline-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-hairline-webfont.svg#latohairline') format('svg');
+    font-weight: 100;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-hairlineitalic-webfont.eot');
+    src:url('../../lib/font/lato-hairlineitalic-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-hairlineitalic-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-hairlineitalic-webfont.woff') format('woff'),
+        url('../../lib/font/lato-hairlineitalic-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-hairlineitalic-webfont.svg#latohairline_italic') format('svg');
+    font-weight: 100;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-bold-webfont.eot');
+    src:url('../../lib/font/lato-bold-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-bold-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-bold-webfont.woff') format('woff'),
+        url('../../lib/font/lato-bold-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-bold-webfont.svg#latobold') format('svg');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-bolditalic-webfont.eot');
+    src:url('../../lib/font/lato-bolditalic-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-bolditalic-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-bolditalic-webfont.woff') format('woff'),
+        url('../../lib/font/lato-bolditalic-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-bolditalic-webfont.svg#latobold_italic') format('svg');
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-black-webfont.eot');
+    src:url('../../lib/font/lato-black-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-black-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-black-webfont.woff') format('woff'),
+        url('../../lib/font/lato-black-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-black-webfont.svg#latoblack') format('svg');
+    font-weight: 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src:url('../../lib/font/lato-blackitalic-webfont.eot');
+    src:url('../../lib/font/lato-blackitalic-webfont.eot?#iefix') format('embedded-opentype'),
+        url('../../lib/font/lato-blackitalic-webfont.woff2') format('woff2'),
+        url('../../lib/font/lato-blackitalic-webfont.woff') format('woff'),
+        url('../../lib/font/lato-blackitalic-webfont.ttf') format('truetype'),
+        url('../../lib/font/lato-blackitalic-webfont.svg#latoblack_italic') format('svg');
+    font-weight: 900;
+    font-style: italic;
+}
+
+// Catalyst color variables
+$catRed: #BA2025;
+$catBlack: #190F10;
+$catBrown: #50433C;
+$catMustard: #C6B253;
+$catGrey: #C3C3C3;
+$catOrange: #DD8545;
+$catYellow: #E6AD30;
+$catBlue: #5B9AA9;
+$catGreen: #889A3A;
+
+// Override theme settings (see ../template/settings.scss)
+$mainFont: 'Lato', sans-serif;
+$mainColor: $catBlack;
+$headingFont: 'Lato', sans-serif;
+$headingColor: $catBrown;
+$headingLineHeight: 1em;
+$headingTextShadow: none;
+$headingTextTransform: none;
+$backgroundColor: #FFF;
+$linkColor: $catRed;
+$linkColorHover: darken( $linkColor, 10% );
+$selectionBackgroundColor: rgba(0, 0, 0, 0.99);
+
+
+// Theme template ------------------------------
+@import "../template/theme";
+// ---------------------------------------------
+
+
+/*********************************************
+ * HEADERS
+ *********************************************/
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+    font-weight: 900;
+}
+
+.reveal h1.catalyst-logo {
+    background: url(images/catalyst-logo.svg) no-repeat 50% 0 / 30% auto;
+    font-size: 0;
+    color: transparent;
+    width: 100%;
+    height: 60px;
+    // padding-bottom:30px;
+}
+
+.reveal .print-only {
+    display:none;
+    visibility:hidden;
+}
+
+/*********************************************
+ * TEXT
+ *********************************************/
+ .reveal p.small-text {
+     font-size:19px;
+ }
+
+ .reveal blockquote {
+     color:$catBlue;
+     padding:20px;
+     letter-spacing: 0.01em;
+     box-shadow:none;
+ }
+
+ .reveal blockquote.quotation-marks::before,
+ .reveal blockquote p:before {
+     content:url(images/quote-open.png);
+     vertical-align:super;
+ }
+
+ .reveal blockquote p:before,
+ .reveal blockquote p:after {
+     padding:0 10px;
+ }
+
+ .reveal blockquote.quotation-marks::after,
+ .reveal blockquote p:after {
+     content:url(images/quote-close.png);
+     vertical-align:super;
+ }
+
+
+/*********************************************
+ * IMAGES
+ *********************************************/
+
+.reveal section img {
+    border:0px none;
+    box-shadow:none;
+    -moz-box-shadow:none;
+    -webkit-box-shadow:none;
+}
+
+.reveal section .img-right {
+    float:right;
+    margin-left:20px;
+}
+
+.reveal section .img-centered {
+    display:block;
+    margin:20px auto;
+}
+
+/*********************************************
+ * LINKS
+ *********************************************/
+
+.reveal a:not(.image):hover {
+    text-decoration: underline;
+}
+
+.longurl code {
+    font-size: 0.65em;
+    vertical-align: middle;
+}
+
+/*********************************************
+ * LISTS
+ *********************************************/
+
+.reveal ul ul li {
+    font-size: 0.8em;
+}
+
+.reveal ul li {
+    line-height: 60px;
+}
+
+/*********************************************
+ * TABLES
+ *********************************************/
+
+.reveal table {
+    margin:20px auto;
+    font-size: 0.6em;
+    line-height: 1.2em;
+    border-collapse: collapse;
+
+    tbody tr:nth-child(even) {
+        background-color:#DDD;
+    }
+
+    td, th {
+        padding-right:0.5em;
+
+        &:first-child {
+            padding-left:0.5em;
+        }
+    }
+}
+
+/*********************************************
+ * NAVIGATION CONTROLS
+ *********************************************/
+
+.reveal .controls {
+    bottom: -3px;
+}
+.reveal .controls button.navigate-left,
+.reveal .controls button.navigate-left.enabled {
+    border-right-color: $catBrown;
+}
+.reveal .controls button.navigate-right,
+.reveal .controls button.navigate-right.enabled {
+    border-left-color: $catBrown;
+}
+.reveal .controls button.navigate-up,
+.reveal .controls button.navigate-up.enabled {
+    border-bottom-color: $catBrown;
+}
+.reveal .controls button.navigate-down,
+.reveal .controls button.navigate-down.enabled {
+    border-top-color: $catBrown;
+}
+
+.reveal .controls button.navigate-left.enabled:hover {
+    border-right-color: $catBrown;
+    opacity: 1;
+}
+.reveal .controls button.navigate-right.enabled:hover {
+    border-left-color: $catBrown;
+    opacity: 1;
+}
+.reveal .controls button.navigate-up.enabled:hover {
+    border-bottom-color: $catBrown;
+    opacity: 1;
+}
+.reveal .controls button.navigate-down.enabled:hover {
+    border-top-color: $catBrown;
+    opacity: 1;
+}
+
+/*********************************************
+ * ZOOMED OUT OVERVIEW (Esc key)
+ *********************************************/
+
+.reveal.overview .slides section {
+    background: transparent;
+    background-repeat: no-repeat;
+}
+
+.reveal.overview .slides section.present:not(.stack) {
+    outline: 15px solid $catMustard;
+    background: transparent;
+}
+
+.reveal.overview .slides section:hover:not(.stack) {
+    outline: 15px solid $catGrey;
+    background: transparent;
+}
+
+
+/*********************************************
+ * CIRCLE BANNER PAGES
+ *********************************************/
+.reveal section.title-slide,
+.reveal section > section.title-slide {
+    background: url(images/slide-banner-1.jpg) no-repeat 50% 50%;
+    height: 382px;
+    width: 100%;
+    padding-left:56px;
+    padding-top:0;
+    box-sizing:border-box;
+
+    h2 {
+        width: 384px;
+        height: 384px;
+        box-sizing: border-box;
+        display: table-cell;
+        vertical-align: middle;
+        padding:  30px; // stop the text from getting too close to the edges
+
+        border-radius:192px;
+        -moz-border-radius: 192px;
+        -webkit-border-radius: 192px;
+
+        color:#ffffff;
+        background-color: $catOrange;
+
+        font-weight: 700;
+        font-style: italic;
+        font-size: 1.3em;
+        line-height: 1.2em;
+
+        -webkit-hyphens: none;
+        -moz-hyphens: none;
+        -ms-hyphens: none;
+        hyphens: none;
+
+        // colours for the circles (defaults to orange if not specified)
+        // titles should alternate through in order orange, yellow, blue, green
+        &.orange { background-color: $catOrange; }
+        &.yellow { background-color: $catYellow; }
+        &.blue { background-color: $catBlue; }
+        &.green { background-color: $catGreen; }
+    }
+
+    // set of banner images - use class on html to choose
+    &.banner-2 { background-image: url(images/slide-banner-2.jpg); }
+    &.banner-3 { background-image: url(images/slide-banner-3.jpg); }
+    &.banner-4 { background-image: url(images/slide-banner-4.jpg); }
+    &.banner-5 { background-image: url(images/slide-banner-5.jpg); }
+    &.banner-6 { background-image: url(images/slide-banner-6.jpg); }
+    &.banner-7 { background-image: url(images/slide-banner-7.jpg); }
+    &.banner-8 { background-image: url(images/slide-banner-8.jpg); }
+}
+
+/*********************************************
+ * LARGE IMAGE SLIDES - e.g. catalyst clients
+ *********************************************/
+.reveal .image-slide {
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        text-align: center;
+        margin-top: -10px;
+        margin-bottom: 10px;
+    }
+
+    h2 {
+        font-size: 1.3em;
+    }
+
+    h3 {
+        font-size: 1.55em;
+    }
+
+    img {
+        max-width:100%;
+    }
+}
+
+/*********************************************
+ * SLIDES WITH EXTRA SPACING
+ *********************************************/
+
+ .reveal .extra-spacing {
+    ul li {
+        padding-bottom:20px;
+
+        &:last-child {
+            padding-bottom:0;
+        }
+    }
+ }
+
+ /*********************************************
+  * FREEDOM TO INNOVATE SLIDE
+  *********************************************/
+.reveal img.cat-slogan-image {
+    width:550px;
+    margin:0;
+}
+/*********************************************
+ * FOOTER
+ *********************************************/
+.footer {
+    position: absolute;
+    bottom: 0;
+    height: 110px;
+    width: 100%;
+    z-index: 30;
+    background-color:$backgroundColor;
+}
+
+.scarf {
+    width: 100%;
+
+    div {
+        float: left;
+        width: 25%;
+        height: 5px;
+        margin-bottom: 15px;
+    }
+    .scarf-orange { background: #dd8545; }
+    .scarf-yellow { background: #e6ad30; }
+    .scarf-blue { background: #5b9aa9; }
+    .scarf-green { background: #889a3a; }
+}
+
+.reveal .footer-inner {
+    max-width: 960px;
+    padding: 0 50px;
+    margin-left: auto;
+    margin-right: auto;
+    .catalyst-logo-footer {
+        background: url(images/catalyst-logo.svg) no-repeat 0 58%;
+        background-size: 200px;
+        color: transparent;
+        width: 300px;
+        height: 100%;
+        position: absolute;
+        top: calc(50% - (107px / 2));
+        left: 30px;
+    }
+    .open-source-technologists {
+        background: url(images/open-source-technologists.svg) no-repeat 0 50%;
+        background-size: 300px;
+        width: 400px;
+        height: 100%;
+        font-size: 0;
+        color:transparent;
+        position:absolute;
+        top: calc(50% - (107px / 2));
+        right: 30px;
+    }
+    .freedom-to-innovate {
+        background: url(images/freedom-to-innovate.svg) no-repeat 0 58%;
+        background-size: 300px;
+        width: 400px;
+        height: 100%;
+        font-size: 0;
+        color:transparent;
+        position:absolute;
+        top: calc(50% - (107px / 2));
+        right: 30px;
+    }
+    @media screen and (max-width: 668px) {
+        .open-source-technologists,
+        .freedom-to-innovate {
+            display: none;
+        }
+    }
+}
+
+.slide-number span {
+    color: $catBrown;
+    font-size: 2em;
+    font-family: lato-narrow;
+}
+
+@media print {
+    .reveal .slides > section:first-child {
+        padding-top:100px !important;
+    }
+
+    .reveal .title-slide {
+        padding-left:62px;
+        margin-top:180px;
+        h2 {
+            left: 55px !important;
+        }
+    }
+
+    .reveal .image-slide img {
+        margin-top:0px !important;
+    }
+
+    .reveal .print-only {
+        display:block;
+        visibility: visible;
+        margin-bottom:40px !important;
+        text-align: center !important;
+    }
+}
