@@ -85,8 +85,27 @@ ansible-playbook ansible/provision-hosts.yml -K
   - create each host
 
 
+#### Bastion host
+
+* Only one machine is directly accessible by SSH <!-- .element: class="fragment" data-fragment-index="0" -->
+* This host is a<!-- .element: class="fragment" data-fragment-index="1" --> _bastion_ or _jump host_ 
+* All other hosts can only be reached from<!-- .element: class="fragment" data-fragment-index="2" -->
+ _bastion_ Note: Adds some extra security for our cluster 
+
+
+#### Using Ansible via a bastion host
+
+* Ansible allows us to pass options to SSH for all interactions with a host <!-- .element: class="fragment" data-fragment-index="0" -->
+  ```yaml
+  ansible_ssh_common_args: >  
+      -o StrictHostKeyChecking=no  
+      -o ProxyCommand='ssh ubuntu@bastion exec nc -w300 %h %p'"
+  ```
+* This tells Ansible to<!-- .element: class="fragment" data-fragment-index="1" --> proxy all SSH connections through our bastion 
+
+
 #### Additional setup for hosts
-* Set locale, timezone, etc.
+* Set NZ locale, timezone, etc.
 * Edit `/etc/hosts` on each host
   * bastion host to resolve all hosts in cluster
   * loadbalancer host to resolve all hosts in *web* group
@@ -96,18 +115,17 @@ ansible-playbook ansible/provision-hosts.yml -K
 
 
 #### Delegation
-* Can be tedious to iterate through `hostvars` for each host to find ip
-  address
-* Delegation allows us to perform action on one host with reference to another
-  - eg. assign fixed IP to `/etc/hosts` for one host on another host
+* Often need to configure one host *in the context of another host*
+   - Add web host IPs to another hosts `/etc/hosts`/
+* Key to this is *delegation*
 
-  ```
-  - name: Map each of the frontend hosts in the loadbalancer
-    lineinfile:
-      dest: /etc/hosts
-      line: "{{ ansible_host }} frontend{{ group_index }}"
-    delegate_to: "{{ groups.loadbalancer.0 }}"
-  ```
-
-
-
+<pre class="fragment" data-fragment-index="2" style="font-size:13pt;"><code data-trim data-noescape>
+- name: Set up web hosts with mapping to backend
+  hosts: <mark>web</mark>
+  .
+    - name: Map each of the frontend hosts in the loadbalancer
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ ansible_host }} frontend{{ group_index }}"
+      <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
+</code></pre>
