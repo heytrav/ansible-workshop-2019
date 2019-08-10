@@ -10,50 +10,35 @@
 #   -e live=[blue,green]
 #     blue is default
 #      
-- import_playbook: sort-inventory-hosts.yml
+#- import_playbook: sort-inventory-hosts.yml
+- import_playbook: lb-host.yml
 
-- name: Set live group as active
-  hosts: localhost
-  gather_facts: false
-  vars:
-    active: "{{ groups[ live | default('blue') ] | intersect(groups.deployed_cluster) }}"
+# ADD set active group
 
-  tasks:
-    - name: Add active hosts to group
-      add_host:
-        name: "{{ item }}"
-        groups:
-          - active
-      with_items: "{{ active | default(groups.blue_green) }}"
+
+
 
 - import_playbook: blue-green-start-switch.yml
 
 - name: Update app in inactive half of cluster
   become: true
-  hosts: app:&deployed_cluster:!active
+  # ADD set to update
+
+
   any_errors_fatal: true
   vars:
-    database_host: "{{ (groups.db | intersect(groups.deployed_cluster))[0] }}"
+    database_host: "{{ groups.db[0] }}"
   tasks:
     - import_tasks: tasks/setup-app.yml
 
-    - meta: flush_handlers
+    # ADD flush handlers and check port
 
-    - name: Make sure gunicorn is accepting connections
-      wait_for:
-        port: 5000
-        timeout: 60
 
-    - name: Check that the site is reachable via nginx
-      uri:
-        url: "http://{{ ansible_host }}:5000"
-        status_code: 200
-        return_content: yes
-        headers:
-          HOST: my-app.cats
-      register: app_site
-      failed_when: "'version: ' + app_version not in app_site.content"
-      delegate_to: "{{ web_server }}"
+
+
+    # ADD check version display
+
+
 
   handlers:
     - name: restart gunicorn
@@ -62,27 +47,9 @@
         state: restarted
 
 
-- name: Enable traffic to updated app server
-  hosts: web:&deployed_cluster:!active
-  become: true
-  tasks:
-    - name: Enable application at load balancer
-      haproxy:
-        backend: catapp-backend
-        host: "{{ inventory_hostname }}"
-        state: enabled
-      delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+# ADD enable traffic to inactive
 
 
-- name: Stop traffic to initial live group
-  hosts: web:&deployed_cluster:&active
-  become: true
-  tasks:
-    - name: Disable application at load balancer
-      haproxy:
-        backend: catapp-backend
-        host: "{{ inventory_hostname }}"
-        state: disabled
-      delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+
+
+# ADD disable traffic to active side

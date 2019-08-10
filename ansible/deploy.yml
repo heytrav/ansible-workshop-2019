@@ -15,10 +15,10 @@
 #      lb:
 #         Install and configure haproxy
 
-- import_playbook: sort-inventory-hosts.yml 
+- import_playbook: lb-host.yml
 
 - name: Update apt cache on all machines
-  hosts: cluster:&deployed_cluster
+  hosts: cluster
   become: true
   tasks:
     - name: Update apt cache
@@ -27,7 +27,7 @@
         
 
 - name: Set up database machine
-  hosts: db:&deployed_cluster
+  hosts: db
   become: true
   tags:
     - deploy
@@ -82,7 +82,7 @@
 
     
 - name: Set up app and database machine
-  hosts: db:&deployed_cluster
+  hosts: db
   tags:
     - deploy
     - db
@@ -104,7 +104,7 @@
       changed_when:
         - create_table_output.rc == 0
         - create_table_output.stderr is not search('already exists')
-                                                                                                                                                                                                                                  
+
     - name: Add images to new table
       command: |
         psql -U {{ database_user }} -h localhost 
@@ -120,7 +120,7 @@
 
 
 - name: Set up app server
-  hosts: app:&deployed_cluster
+  hosts: app
   become: true
   tags:
     - deploy
@@ -157,7 +157,7 @@
 
 
 - name: Set up nginx on web server
-  hosts: web:&deployed_cluster
+  hosts: web
   become: true
   tags:
     - deploy
@@ -194,7 +194,7 @@
 
 
 - name: Set up loadbalancer
-  hosts: loadbalancer:&deployed_cluster
+  hosts: loadbalancer
   become: true
   tags:
     - deploy

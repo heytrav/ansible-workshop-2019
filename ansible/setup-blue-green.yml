@@ -1,10 +1,10 @@
-- import_playbook: sort-inventory-hosts.yml 
+- import_playbook: lb-host.yml
 
 - name: Add host to blue and green groups
   hosts: localhost
   gather_facts: false
   vars:
-    active: "{{ groups[ live | default('blue_green') ] | intersect(groups.deployed_cluster) }}"
+    active: "{{ groups[ live | default('blue_green') ] }}"
 
   tasks:
     - name: Add active hosts to group

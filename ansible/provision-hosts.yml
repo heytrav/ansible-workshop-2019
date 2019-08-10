@@ -4,69 +4,57 @@
   hosts: localhost
   gather_facts: false
   vars:
-    host_set: "{{ groups.cluster }}"
-    security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"
-    security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"
+    # ADD hosts to create
+    
+    # ADD extract security groups from inventory
+
+
   tasks:
-    - name: Connect to Catalyst Cloud
-      os_auth:
-        cloud: "{{ cloud_name | default(omit) }}"
 
-    - name: Create keypair
-      os_keypair:
-        cloud: "{{ cloud_name  | default(omit) }}"
-        name: "{{ keypair_name }}"
-        public_key: "{{ ssh_public_key }}"
+    - name: Output groups variable
+      debug:
+        var: groups
 
-    - name: Create Network
-      os_network:
-        cloud: "{{ cloud_name  | default(omit) }}"
-        name: "{{ network_name }}"
-        state: present
+    - name: Output host_set
+      debug:
+        var: host_set | mandatory
 
-    - name: Create subnet
-      os_subnet:
-        cloud: "{{ cloud_name  | default(omit) }}"
-        name: "{{ subnet_name }}"
-        network_name: "{{ network_name }}"
-        state: present
-        cidr: "{{ subnet_cidr }}"
-        allocation_pool_start: "{{ subnet_dhcp_start }}"
-        allocation_pool_end: "{{ subnet_dhcp_end }}"
-        ip_version: 4
-        dns_nameservers: "{{ default_nameservers }}"
+    # ADD create cloud resource methods
 
-    - name: Create router
-      os_router:
-        cloud: "{{ cloud_name  | default(omit) }}"
-        state: present
-        name: "{{ router_name }}"
-        network: "{{ public_net_name }}"
-        interfaces:
-          - "{{ subnet_name }}"
+
+
+
+
+
+
+
+    - name: Output security groups
+      debug:
+        var: security_groups | mandatory
+
+    - name: Output security group names
+      debug:
+        var: security_group_names | mandatory
 
     - name: Create security groups
       os_security_group:
-        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         name: "{{ item }}"
       with_items: "{{ security_group_names }}"
 
     - name: Add rules for security group
       os_security_group_rule:
-        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         security_group: "{{ item.group }}"
         protocol: "{{ item.proto | default('tcp') }}"
-        port_range_min: "{{ omit if item.port == 'any' else item.port }}"
-        port_range_max: "{{ omit if item.port == 'any' else item.port_end | default(item.port) }}"
+        port_range_min: "{{ item.port }}"
+        port_range_max: "{{ item.port }}"
         remote_ip_prefix: "{{ item.remote_ip_prefix | default(omit) }}"
         remote_group: "{{ item.remote_group | default(omit) }}"
       with_items: "{{ security_groups }}"
 
     - name: Create cluster instances
       os_server:
-        cloud: "{{ cloud_name  | default(omit) }}"
         state: present
         name: "{{ item }}"
         image: "{{ default_os_image }}"
@@ -81,10 +69,6 @@
           groups: "{{ hostvars[item].group_names | join(',') }}"
         userdata: |
                   #cloud-config
-                  datasource:
-                    OpenStack:
-                      metadata_urls: ["http://169.254.169.254"]
-                      max_wait: -1
                   users:
                     - name: "{{ hostvars[item].ansible_user }}"
                       shell: /bin/bash
@@ -110,19 +94,18 @@
       loop: "{{ launch.results }}"
       when: item.openstack.name in groups.loadbalancer
 
-    - name: Set ssh args for bastion
-      add_host:
-        name: "{{ item.openstack.name  }}"
-        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes"
-      loop: "{{ launch.results }}"
-      when: item.openstack.name in groups.bastion
+    # ADD SSH args 
 
-    - name: Set ssh args for rest of cluster
-      add_host:
-        name: "{{ item.openstack.name  }}"
-        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[item.openstack.name].ansible_user }}@{{ hostvars[groups.bastion[0]].ansible_host }} exec nc -w300 %h %p'"
-      loop: "{{ launch.results }}"
-      when: item.openstack.name in groups.private_net
+
+
+
+
+
+
+
+
+
+
 
     - name: Remove IP from all machines from known hosts
       known_hosts:
@@ -140,39 +123,6 @@
     - name: Wait for connection to be available on bastion
       wait_for_connection:
       delegate_to: localhost
-
-
-#- name: Add ssh config and local /etc/hosts mapping for hosts
-  #hosts: cluster
-  #serial: 1
-  #gather_facts: false
-  #tasks:
-    #- block:
-      #- name: "Add cluster to local ~/.ssh/config"
-        #blockinfile:
-          #dest: "{{ lookup('env', 'HOME') }}/.ssh/config"
-          #insertafter: EOF
-          #block: |
-            #Host {{ ansible_host }}
-                #User {{ ansible_user }}
-                #StrictHostKeyChecking no
-                #{{ ssh_proxy_command }}
-            #Host {{ inventory_hostname }}
-                #User {{ ansible_user }}
-                #StrictHostKeyChecking no
-                #{{ ssh_proxy_command }}
-          #marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
-
-      #- name: "Add host to /etc/hosts"
-        #become: yes
-        #blockinfile:
-          #dest: /etc/hosts
-          #insertafter: EOF
-          #block: |
-            #{{ ansible_host }} {{ inventory_hostname }}
-          #marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ inventory_hostname }}"
-      #delegate_to: localhost
-
 
 - name: Add bastion public ip to known_hosts
   hosts: bastion
@@ -195,6 +145,7 @@
 
       delegate_to: localhost
 
+
 - name: Check connectivity to hosts
   hosts: cluster:!bastion
   gather_facts: false
@@ -204,85 +155,35 @@
       wait_for_connection:
       delegate_to: localhost
 
-- name: Set up the bastion hosts
-  hosts: bastion
-  become: true
-  serial: 1
-  tasks:
-    - name: Add entry to /etc/hosts for all instances
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ hostvars[item].ansible_host }} {{ item }}"
-      with_items: "{{ groups.appcluster }}"
+# ADD bastion -> private_net for SSH
 
 
-- name: Common setup for all hosts
-  hosts: cluster
-  become: true
-  tasks:
-
-    - name: Add NZ locale to all instances
-      locale_gen:
-        name: en_NZ.UTF-8
-        state: present
-
-- name: Set up the bastion hosts
-  hosts: bastion
-  become: true
-  tasks:
-    - name: Add entry to /etc/hosts for all instances
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ hostvars[item].ansible_host }} {{ item }}"
-      with_items: "{{ groups.private_net }}"
 
 
-- name: Set up web hosts with mapping to backend
-  hosts: web
-  become: true
-  serial: 1
-  tasks:
-    - name: Map each of the frontend hosts in the loadbalancer
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} frontend{{ group_index }}"
-      delegate_to: "{{ groups.loadbalancer.0 }}"
-
-- name: Set up web hosts with mapping to backend
-  hosts: app
-  become: true
-  tasks:
-
-    - name: Map each frontend host to speak to a specific backend
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} backend"
-      delegate_to: "{{ prefix }}-web{{ group_index }}"
-
-- name: Add mapping for db on app boxes
-  hosts: db
-  become: true
-  tasks:
-
-    - name: Map each app host to speak to db
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} {{ inventory_hostname }}"
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups.app }}"
 
 
-- name: Extra set up for web demo
-  hosts: loadbalancer
-  become: true
-  gather_facts: false
-  tasks:
 
-    - name: "Add fake domain to /etc/hosts"
-      blockinfile:
-        dest: /etc/hosts
-        insertafter: EOF
-        block: |
-          {{ public_v4 }} my-app.cat
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"
-      delegate_to: localhost
+# ADD web -> app for proxy pass
+
+
+
+
+
+
+
+
+
+# ADD app -> db for application
+
+
+
+
+
+
+
+
+
+
+
+
+# ADD locale and timezone

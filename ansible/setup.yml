@@ -8,3 +8,4 @@
       os_project_name: "{{ ansible_env.OS_PROJECT_NAME }}"
       os_project_id: "{{ ansible_env.OS_PROJECT_ID }}"
       os_password: "{{ ansible_env.OS_PASSWORD }}"
+      os_region_name: "{{ ansible_env.OS_REGION_NAME }}"
