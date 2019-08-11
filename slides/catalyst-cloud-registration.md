@@ -19,7 +19,7 @@
 * Activate the OpenStack config in your terminal <!-- .element: class="fragment" data-fragment-index="0" -->
 * This will prompt you to enter your Catalyst Cloud password <!-- .element: class="fragment" data-fragment-index="1" -->
     <pre><code data-trim data-noescape>
-    source <mark>account name</mark>.catalyst.net.nz-openrc.sh
+    source <mark>&lt;your account name&gt;</mark>.catalyst.net.nz-openrc.sh
     Please enter your OpenStack Password for project ...
     *******
     </code></pre>

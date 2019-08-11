@@ -12,10 +12,11 @@
 
 
 #### Running playbook
-```
-ansible-playbook ansible/provision-hosts.yml -K
-```
 * Start the provisioning playbook
+  ```
+  ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml -K
+  ```
+  <!-- .element: style="font-size:11pt;"  -->
 
 
 #### Our cluster 
@@ -56,7 +57,7 @@ ansible-playbook ansible/provision-hosts.yml -K
   <!-- .element: style="font-size:9pt;"  -->
 
 
-#### Inventory hosts and groups <!-- .slide: class="image-slide" -->
+#### High Level View <!-- .slide: class="image-slide" -->
 ![cotd-venn](img/cotd-venn.png "COTD venn diagram")
 
 
@@ -66,23 +67,27 @@ ansible-playbook ansible/provision-hosts.yml -K
   - Networks
   - Security groups, acls, etc
 * Ansible has [modules](https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html) that cover most providers/resources
-* [OpenStack
-  Modules](https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html#openstack)
+* We will use [OpenStack Modules](https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html#openstack)
 
 
 #### The `provision-hosts.yml` playbook
-* <!-- .element: class="fragment" data-fragment-index="0" -->Ansible uses openstack API in the background
-* <!-- .element: class="fragment" data-fragment-index="1" -->Tasks are executed on *localhost*
+* <!-- .element: class="fragment" data-fragment-index="0" -->Tasks in the
+  first play are executed on local machine
    <pre style="font-size:10pt;"><code data-trim data-noescape>
    name:  Provision a set of hosts in Catalyst Cloud
    hosts: <mark>localhost</mark>
    gather_facts: false
    tasks:
 </code></pre>
-* <!-- .element: class="fragment" data-fragment-index="2" -->Boilerplate for creating multiple cloud hosts
+* <!-- .element: class="fragment" data-fragment-index="1" -->Boilerplate for creating multiple cloud hosts
   - log in to cloud provider
   - create router, network, security groups
   - create each host
+* <!-- .element: class="fragment" data-fragment-index="2" -->Ansible uses openstack API in the background
+
+Note:
+- all tasks with os_ in module are cloud api
+- building cloud modules generally boilerplate
 
 
 #### Bastion host
@@ -94,14 +99,15 @@ ansible-playbook ansible/provision-hosts.yml -K
 
 
 #### Using Ansible via a bastion host
-
-* Ansible allows us to pass options to SSH for all interactions with a host <!-- .element: class="fragment" data-fragment-index="0" -->
+* Hosts in *private_net* group do not have public IP ![cotd-venn-private](img/cotd-venn-private_net.png "Private net") <!-- .element: class="img-right" width="40%" -->
+* Only way to SSH in is by traversing the *bastion* host
+* <!-- .element: class="fragment" data-fragment-index="0" -->Can tell ansible
+  to do this for group
   ```yaml
   ansible_ssh_common_args: >  
       -o StrictHostKeyChecking=no  
       -o ProxyCommand='ssh ubuntu@bastion exec nc -w300 %h %p'"
   ```
-* This tells Ansible to<!-- .element: class="fragment" data-fragment-index="1" --> proxy all SSH connections through our bastion 
 
 
 #### Additional setup for hosts

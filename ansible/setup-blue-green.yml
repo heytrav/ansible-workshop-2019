@@ -1,4 +1,4 @@
-- import_playbook: sort-inventory-hosts.yml 
+- import_playbook: lb-host.yml
 
 - name: Add host to blue and green groups
   hosts: localhost

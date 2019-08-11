@@ -3,7 +3,7 @@
 
 #### Installing Ansible
 * For this workshop we'll be using Ansible &ge; 2.8
-* Different [installation options](http://docs.ansible.com/ansible/latest/intro_installation.html)
+* [Installation options](http://docs.ansible.com/ansible/latest/intro_installation.html)
 
 
 ###### Setup Python virtualenv
