@@ -10,13 +10,14 @@
 #   -e live=[blue,green]
 #     blue is default
 #      
-- import_playbook: sort-inventory-hosts.yml
+#- import_playbook: sort-inventory-hosts.yml
+- import_playbook: lb-host.yml
 
 - name: Set live group as active
   hosts: localhost
   gather_facts: false
   vars:
-    active: "{{ groups[ live | default('blue') ] | intersect(groups.deployed_cluster) }}"
+    active: "{{ groups[ live | default('blue') ] }}"
 
   tasks:
     - name: Add active hosts to group
@@ -30,10 +31,10 @@
 
 - name: Update app in inactive half of cluster
   become: true
-  hosts: app:&deployed_cluster:!active
+  hosts: app:!active
   any_errors_fatal: true
   vars:
-    database_host: "{{ (groups.db | intersect(groups.deployed_cluster))[0] }}"
+    database_host: "{{ groups.db[0] }}"
   tasks:
     - import_tasks: tasks/setup-app.yml
 
@@ -63,7 +64,7 @@
 
 
 - name: Enable traffic to updated app server
-  hosts: web:&deployed_cluster:!active
+  hosts: web:!active
   become: true
   tasks:
     - name: Enable application at load balancer
@@ -72,11 +73,11 @@
         host: "{{ inventory_hostname }}"
         state: enabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"
 
 
 - name: Stop traffic to initial live group
-  hosts: web:&deployed_cluster:&active
+  hosts: web:&active
   become: true
   tasks:
     - name: Disable application at load balancer
@@ -85,4 +86,4 @@
         host: "{{ inventory_hostname }}"
         state: disabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"

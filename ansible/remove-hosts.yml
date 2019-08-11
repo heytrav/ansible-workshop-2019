@@ -66,26 +66,3 @@
         name: "{{ item }}"
         state: absent
       with_items: "{{ security_group_names }}"
-
-    - name: Remove hosts from local ~/.ssh/config
-      blockinfile:
-        dest: "{{  lookup('env', 'HOME')  }}/.ssh/config"
-        state: absent
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ item }}"
-      with_items: "{{ host_set }}"
-
-    - name: Remove host from /etc/hosts
-      become: yes
-      blockinfile:
-        dest: /etc/hosts
-        state: absent
-        insertafter: EOF
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for {{ item }}"
-      with_items: "{{ host_set }}"
-
-    - name: Remove fake domain from /etc/hosts
-      become: yes
-      blockinfile:
-        dest: /etc/hosts
-        state: absent
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"

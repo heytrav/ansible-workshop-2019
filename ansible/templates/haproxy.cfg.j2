@@ -36,6 +36,6 @@ backend catapp-backend
     option httpclose
     option forwardfor
     cookie SRVNAME insert
-{% for item in groups.web | intersect(groups.deployed_cluster) %}
+{% for item in groups.web  %}
     server {{ item }} {{ hostvars[item].ansible_host }}:80 cookie S{{ loop.index }} check
 {% endfor %}

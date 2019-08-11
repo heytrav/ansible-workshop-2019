@@ -5,17 +5,18 @@
 #    -e app_version= 
 #         v1 or v2 or v3 (existing version of app)
 
-- import_playbook: sort-inventory-hosts.yml
+#- import_playbook: sort-inventory-hosts.yml
+- import_playbook: lb-host.yml
 
 - name: Upgrade application in place
   become: true
-  hosts: app:&deployed_cluster
+  hosts: app
   serial: 1
   any_errors_fatal: true
   tags:
     - app
   vars:
-    database_host: "{{ (groups.db | intersect(groups.deployed_cluster))[0] }}"
+    database_host: "{{ groups.db[0] }}"
 
   tasks:
 
@@ -25,7 +26,7 @@
         host: "{{ web_server }}"
         state: disabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"
 
     - import_tasks: tasks/setup-app.yml
 
@@ -42,7 +43,7 @@
         host: "{{ web_server }}"
         state: enabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"
 
 
   handlers:

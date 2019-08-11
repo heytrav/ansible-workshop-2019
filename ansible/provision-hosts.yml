@@ -33,7 +33,7 @@
         cidr: "{{ subnet_cidr }}"
         allocation_pool_start: "{{ subnet_dhcp_start }}"
         allocation_pool_end: "{{ subnet_dhcp_end }}"
-        ip_version: 4
+        ip_version: "4"
         dns_nameservers: "{{ default_nameservers }}"
 
     - name: Create router
@@ -239,17 +239,17 @@
       with_items: "{{ groups.app }}"
 
 
-- name: Extra set up for web demo
-  hosts: loadbalancer
-  become: true
-  gather_facts: false
-  tasks:
+#- name: Extra set up for web demo
+  #hosts: loadbalancer
+  #become: true
+  #gather_facts: false
+  #tasks:
 
-    - name: "Add fake domain to /etc/hosts"
-      blockinfile:
-        dest: /etc/hosts
-        insertafter: EOF
-        block: |
-          {{ public_v4 }} my-app.cat
-        marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"
-      delegate_to: localhost
+    #- name: "Add fake domain to /etc/hosts"
+      #blockinfile:
+        #dest: /etc/hosts
+        #insertafter: EOF
+        #block: |
+          #{{ public_v4 }} my-app.cat
+        #marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"
+      #delegate_to: localhost

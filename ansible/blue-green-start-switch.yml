@@ -1,7 +1,7 @@
 ---
 
 - name: Enable backend application in active group
-  hosts: app:&deployed_cluster:&active
+  hosts: app:&active
   become: true
   tasks:
     - name: Start gunicorn
@@ -10,7 +10,7 @@
         state: started
 
 - name: Enable traffic to active group
-  hosts: web:&deployed_cluster:&active
+  hosts: web:&active
   become: true
   tasks:
     - name: Enable application at load balancer
@@ -19,11 +19,11 @@
         host: "{{ inventory_hostname }}"
         state: enabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"
 
 
 - name: Stop traffic to inactive group
-  hosts: web:&deployed_cluster:!active
+  hosts: web:!active
   become: true
   tasks:
     - name: Disable application at load balancer
@@ -32,10 +32,10 @@
         host: "{{ inventory_hostname }}"
         state: disabled
       delegate_to: "{{ item }}"
-      loop: "{{ groups.loadbalancer | intersect(groups.deployed_cluster) }}"
+      loop: "{{ groups.loadbalancer }}"
 
 - name: Shut down backend application in inactive group
-  hosts: app:&deployed_cluster:!active
+  hosts: app:!active
   become: true
   tasks:
     - name: Stop gunicorn

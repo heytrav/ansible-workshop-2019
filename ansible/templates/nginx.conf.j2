@@ -1,6 +1,6 @@
 server {
  listen 80;
- server_name  my-app.cat;
+ server_name {{ hostvars[groups.loadbalancer[0]].openstack.public_v4 }}.xip.io www.{{ hostvars[groups.loadbalancer[0]].openstack.public_v4 }}.xip.io;
 
  location / {
   include proxy_params;
