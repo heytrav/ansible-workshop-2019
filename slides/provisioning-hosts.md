@@ -116,10 +116,11 @@ Note: Adds some extra security for our cluster
 #### Traversing a bastion host
 * <!-- .element: class="fragment" data-fragment-index="0" -->Ansible relies on SSH to talk to remote hosts
 * <!-- .element: class="fragment" data-fragment-index="1" -->Just need to pass SSH arguments for hosts in *private_net* group
-* <!-- .element: class="fragment" data-fragment-index="2" -->Add to hostvars for each instance
-* <!-- .element: class="fragment" data-fragment-index="3" -->Add following to section marked `# ADD SSH args`
+* <!-- .element: class="fragment" data-fragment-index="2" -->Assign to hostvars for each instance
+* <!-- .element: class="fragment" data-fragment-index="3" -->Add following to `provision-hosts.yml`
 
 ```
+# ADD SSH args
  - name: Set ssh args for bastion
    add_host:
      name: "{{ item.openstack.name  }}"
@@ -169,7 +170,6 @@ data-fragment-index="3" -->
   hosts: cluster
   become: true
   tasks:
-
     - name: Add NZ locale to all instances
       locale_gen:
         name: en_NZ.UTF-8
@@ -183,16 +183,14 @@ data-fragment-index="3" -->
 * Often need to configure one host *in the context of another host*
    - Add web host IPs to another hosts `/etc/hosts`/
 * Key to this is *delegation*
-* Add the following plays to `provision-hosts.yml` after
-  ```
-  # ADD resolving application components
-  ```
+* Add the following plays to `provision-hosts.yml`
 
 
 #### Resolving application services and delegation
 <pre style="font-size:8pt;"><code data-trim data-noescape>
+# ADD resolving application components
 - name: Set up web hosts with mapping to backend
-  hosts: web
+  <mark>hosts: web</mark>
   tasks:
     - name: Map each of the frontend hosts in the loadbalancer
       lineinfile:
@@ -201,7 +199,7 @@ data-fragment-index="3" -->
       <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
 
 - name: Set up web hosts with mapping to backend
-  hosts: app
+  <mark>hosts: app</mark>
   become: true
   tasks:
 
@@ -214,9 +212,9 @@ data-fragment-index="3" -->
 
 
 #### Resolving application services and delegation
-```
+<pre style="font-size:8pt;"><code data-trim data-noescape>
 - name: Add mapping for db on app boxes
-  hosts: db
+  <mark>hosts: db</mark>
   become: true
   tasks:
 
@@ -224,22 +222,8 @@ data-fragment-index="3" -->
       lineinfile:
         dest: /etc/hosts
         line: "{{ ansible_host }} {{ inventory_hostname }}"
-      delegate_to: "{{ item }}"
+      <mark>delegate_to: "{{ item }}"</mark>
       with_items: "{{ groups.app }}"
-```
-<!-- .element: style="font-size:8pt;"  -->
-
-
-#### Delegation
-<pre class="fragment" data-fragment-index="2" style="font-size:13pt;"><code data-trim data-noescape>
-- name: Set up web hosts with mapping to backend
-  hosts: <mark>web</mark>
-  .
-    - name: Map each of the frontend hosts in the loadbalancer
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} frontend{{ group_index }}"
-      <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
 </code></pre>
 
 

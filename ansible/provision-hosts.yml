@@ -110,7 +110,7 @@
       loop: "{{ launch.results }}"
       when: item.openstack.name in groups.loadbalancer
 
-      # ADD SSH args 
+    # ADD SSH args 
     - name: Set ssh args for bastion
       add_host:
         name: "{{ item.openstack.name  }}"
@@ -194,6 +194,7 @@
         name: en_NZ.UTF-8
         state: present
 
+# ADD resolving application components
 - name: Set up web hosts with mapping to backend
   hosts: web
   become: true
@@ -226,19 +227,3 @@
         line: "{{ ansible_host }} {{ inventory_hostname }}"
       delegate_to: "{{ item }}"
       with_items: "{{ groups.app }}"
-
-
-#- name: Extra set up for web demo
-  #hosts: loadbalancer
-  #become: true
-  #gather_facts: false
-  #tasks:
-
-    #- name: "Add fake domain to /etc/hosts"
-      #blockinfile:
-        #dest: /etc/hosts
-        #insertafter: EOF
-        #block: |
-          #{{ public_v4 }} my-app.cat
-        #marker: "# {mark} ANSIBLE MANAGED BLOCK for my-app.cat"
-      #delegate_to: localhost
