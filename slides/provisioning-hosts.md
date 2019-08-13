@@ -234,5 +234,5 @@ data-fragment-index="3" -->
    ```
    <!-- .element: style="font-size:11pt;" class="stretch"  -->
 
-* In case task fails with ssh error just hit `CTRL-C` and restart
+* In case task fails with SSH error just hit `CTRL-C` and restart
 <!-- .element: class="stretch"  -->
