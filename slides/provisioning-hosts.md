@@ -11,17 +11,6 @@
 * Seems like a lot, but we are trying to simulate upgrades across a cluster
 
 
-#### Provisioning Hosts
-*  Start the provisioning playbook
-   ```
-   ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml
-   ```
-   <!-- .element: style="font-size:11pt;" class="stretch"  -->
-
-* In case task fails with ssh error just hit `CTRL-C` and restart
-<!-- .element: class="stretch"  -->
-
-
 #### Our cluster 
 * <!-- .element: class="fragment" data-fragment-index="0" -->HTTP traffic reaches web hosts via load balancer
 ![cotd-cluster](img/cotd-bastion-arch.png "COTD cluster") <!-- .element: class="img-right"  width="30%"  -->
@@ -94,7 +83,7 @@ Note:
 
 
 #### Using OpenStack cloud modules
-* Use cloud modules to create objects on tenant
+* The first play uses cloud modules to create objects on your tenant
 
 ```yaml
 - name: Provision a set of hosts in the Catalyst Cloud
@@ -118,28 +107,35 @@ Note:
 
 #### Using Ansible via a bastion host
 * Hosts in *private_net* group do not have public IP ![cotd-venn-private](img/cotd-venn-private_net.png "Private net") <!-- .element: class="img-right" width="60%" -->
-
-
-#### Bastion host
-
-* Only one machine is directly accessible by SSH <!-- .element: class="fragment" data-fragment-index="0" -->
-* This host is a<!-- .element: class="fragment" data-fragment-index="1" --> _bastion_ or _jump host_ 
+* Only bastion is directly accessible by SSH <!-- .element: class="fragment" data-fragment-index="0" -->
 * All other hosts can only be reached from<!-- .element: class="fragment" data-fragment-index="2" --> _bastion_ 
-* <!-- .element: class="fragment" data-fragment-index="3" -->Advantages
-  - need fewer floating IPs
-  - a little added security
 
 Note: Adds some extra security for our cluster 
 
 
 #### Traversing a bastion host
-* Only way to SSH in is by traversing the *bastion* host
-* <!-- .element: class="fragment" data-fragment-index="0" -->Can tell ansible to do this for group
-   ```
-   ansible_ssh_common_args: >  
-       -o StrictHostKeyChecking=no  
-       -o ProxyCommand='ssh ubuntu@bastion exec nc -w300 %h %p'"
-   ```
+* <!-- .element: class="fragment" data-fragment-index="0" -->Ansible relies on SSH to talk to remote hosts
+* <!-- .element: class="fragment" data-fragment-index="1" -->Just need to pass SSH arguments for hosts in *private_net* group
+* <!-- .element: class="fragment" data-fragment-index="2" -->Add to hostvars for each instance
+* <!-- .element: class="fragment" data-fragment-index="3" -->Add following to section marked `# ADD SSH args`
+
+```
+ - name: Set ssh args for bastion
+   add_host:
+     name: "{{ item.openstack.name  }}"
+     ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes"
+   loop: "{{ launch.results }}"
+   when: item.openstack.name in groups.bastion
+
+ - name: Set ssh args for rest of cluster
+   add_host:
+     name: "{{ item.openstack.name  }}"
+     ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o ForwardAgent=yes -o ProxyCommand='ssh {{ hostvars[item.openstack.name].ansible_user }}@{{ hostvars[groups.bastion[0]].ansible_host }} exec nc -w300 %h %p'"
+   loop: "{{ launch.results }}"
+   when: item.openstack.name in groups.private_net
+```
+<!-- .element: style="font-size:8pt;"  class="fragment"
+data-fragment-index="3" -->
 
 
 #### Additional setup for hosts
@@ -154,9 +150,11 @@ Note: Adds some extra security for our cluster
 
 #### Setup the basics
 * `/etc/host` mappings
-* timezones and locales
+* locales
+* Add the following section to playbook
 
 ```yaml
+# ADD host IP, locale
 - name: Set up the bastion hosts
   hosts: bastion
   become: true
@@ -178,13 +176,21 @@ Note: Adds some extra security for our cluster
         state: present
 
 ```
-<!-- .element: style="font-size:10pt;"  -->
+<!-- .element: style="font-size:8pt;"  -->
 
 
-#### Resolving application services
-* Set up `/etc/hosts` for compontents of app
+#### Delegation
+* Often need to configure one host *in the context of another host*
+   - Add web host IPs to another hosts `/etc/hosts`/
+* Key to this is *delegation*
+* Add the following plays to `provision-hosts.yml` after
+  ```
+  # ADD resolving application components
+  ```
 
-```
+
+#### Resolving application services and delegation
+<pre style="font-size:8pt;"><code data-trim data-noescape>
 - name: Set up web hosts with mapping to backend
   hosts: web
   tasks:
@@ -192,7 +198,7 @@ Note: Adds some extra security for our cluster
       lineinfile:
         dest: /etc/hosts
         line: "{{ ansible_host }} frontend{{ group_index }}"
-      delegate_to: "{{ groups.loadbalancer.0 }}"
+      <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
 
 - name: Set up web hosts with mapping to backend
   hosts: app
@@ -203,19 +209,28 @@ Note: Adds some extra security for our cluster
       lineinfile:
         dest: /etc/hosts
         line: "{{ ansible_host }} backend"
-      delegate_to: "{{ prefix }}-web{{ group_index }}"
+      <mark>delegate_to: "{{ prefix }}-web{{ group_index }}"</mark>
+</code></pre>
 
+
+#### Resolving application services and delegation
+```
 - name: Add mapping for db on app boxes
   hosts: db
+  become: true
+  tasks:
+
+    - name: Map each app host to speak to db
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ ansible_host }} {{ inventory_hostname }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.app }}"
 ```
-<!-- .element: style="font-size:10pt;"  -->
+<!-- .element: style="font-size:8pt;"  -->
 
 
 #### Delegation
-* Often need to configure one host *in the context of another host*
-   - Add web host IPs to another hosts `/etc/hosts`/
-* Key to this is *delegation*
-
 <pre class="fragment" data-fragment-index="2" style="font-size:13pt;"><code data-trim data-noescape>
 - name: Set up web hosts with mapping to backend
   hosts: <mark>web</mark>
@@ -226,3 +241,14 @@ Note: Adds some extra security for our cluster
         line: "{{ ansible_host }} frontend{{ group_index }}"
       <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
 </code></pre>
+
+
+#### Provisioning Hosts
+*  Start the provisioning playbook
+   ```
+   ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml
+   ```
+   <!-- .element: style="font-size:11pt;" class="stretch"  -->
+
+* In case task fails with ssh error just hit `CTRL-C` and restart
+<!-- .element: class="stretch"  -->
