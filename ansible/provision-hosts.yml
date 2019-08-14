@@ -195,35 +195,23 @@
         state: present
 
 # ADD resolving application components
-- name: Set up web hosts with mapping to backend
-  hosts: web
-  become: true
-  tasks:
-    - name: Map each of the frontend hosts in the loadbalancer
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} frontend{{ group_index }}"
-      delegate_to: "{{ groups.loadbalancer.0 }}"
 
 - name: Set up web hosts with mapping to backend
-  hosts: app
+  hosts: web
   become: true
   tasks:
 
     - name: Map each frontend host to speak to a specific backend
       lineinfile:
         dest: /etc/hosts
-        line: "{{ ansible_host }} backend"
-      delegate_to: "{{ prefix }}-web{{ group_index }}"
+        line: "{{ hostvars[app_host].ansible_host }} backend"
 
 - name: Add mapping for db on app boxes
-  hosts: db
+  hosts: app
   become: true
   tasks:
 
     - name: Map each app host to speak to db
       lineinfile:
         dest: /etc/hosts
-        line: "{{ ansible_host }} {{ inventory_hostname }}"
-      delegate_to: "{{ item }}"
-      with_items: "{{ groups.app }}"
+        line: "{{ hostvars[groups.db[0]].ansible_host }} {{ inventory_hostname }}"

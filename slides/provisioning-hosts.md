@@ -181,23 +181,16 @@ data-fragment-index="3" -->
 
 #### Delegation
 * Often need to configure one host *in the context of another host*
-   - Add web host IPs to another hosts `/etc/hosts`/
-* Key to this is *delegation*
-* Add the following plays to `provision-hosts.yml`
+* Run a command on server **A** using inventory from **B**
+  * enable/disable web hosts at the load balancer
+* The `delegate_to` directive is useful for this
 
 
 #### Resolving application services and delegation
+* Add the following plays to `provision-hosts.yml`
+
 <pre style="font-size:8pt;"><code data-trim data-noescape>
 # ADD resolving application components
-- name: Set up web hosts with mapping to backend
-  <mark>hosts: web</mark>
-  tasks:
-    - name: Map each of the frontend hosts in the loadbalancer
-      lineinfile:
-        dest: /etc/hosts
-        line: "{{ ansible_host }} frontend{{ group_index }}"
-      <mark>delegate_to: "{{ groups.loadbalancer.0 }}"</mark>
-
 - name: Set up web hosts with mapping to backend
   <mark>hosts: app</mark>
   become: true
