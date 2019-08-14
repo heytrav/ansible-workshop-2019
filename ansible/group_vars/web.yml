@@ -6,7 +6,6 @@ machine_security_groups:
 
 security_groups: "{{ machine_security_groups + main_security_groups }}"
 
-app_host: "{{ groups.app[(group_index | int) - 1] }}"
 app_directory: /usr/local/app
 
 http_pool_member:
