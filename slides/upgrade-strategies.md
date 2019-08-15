@@ -167,7 +167,7 @@
 * Following update with `app_version=v3` half of the application is also
   broken
   ```
-  curl -iv http://<public ip>.xip.io
+  curl --head http://<public ip>.xip.io
   ```
   ```
   < HTTP/1.1 502 Bad Gateway
@@ -323,9 +323,10 @@ ansible/app-blue-green-upgrade.yml
 
 #### Ad hoc groups
 * For _blue-green_ we need to assign _active_ and _not active_ half of cluster
-* Can assign groups of host to ad hoc groups when running Ansible
-* By default we declare _blue_ active
-   <pre style="font-size:10pt;" class="fragment" data-fragment-index="0" ><code data-trim data-noescape>
+* <!-- .element: class="fragment" data-fragment-index="0" -->Can assign groups of hosts to _ad hoc_ groups 
+* <!-- .element: class="fragment" data-fragment-index="1" -->By default we declare _blue_ active
+* <!-- .element: class="fragment" data-fragment-index="2" -->Add following to `app-blue-green-upgrade.yml`
+   <pre style="font-size:10pt;" ><code data-trim data-noescape>
    # ADD set active group
   - name: Set live group as active
     hosts: localhost
@@ -334,21 +335,73 @@ ansible/app-blue-green-upgrade.yml
       active: "{{ groups[ live | default('blue') ] }}"
     tasks:
       - name: Add active hosts to group
-        <mark>add_host:</mark>
-        <mark>  name: "{{ item }}"</mark>
-        <mark>  groups:</mark>
+        add_host:
+          name: "{{ item }}"
+          groups:
         <mark>    - active</mark>
         with_items: "{{ active | default(groups.blue_green) }}"
 </code></pre>
-* <!-- .element: class="fragment" data-fragment-index="1" -->Can override with `-e live=green`
+
+
+#### Operating on groups and subgroups
+* The play we added creates an  _ad hoc_ group called **active**
+* <!-- .element: class="fragment" data-fragment-index="0" -->Initially equal to **blue** group
+  ![cotd-blue-active](img/cotd-blue-green-venn-active.png "Blue Active") <!-- .element: class="img-right" -->
+* <!-- .element: class="fragment" data-fragment-index="1" -->We want to update hosts **not in the active**
 
 
 
+### Group set theory
 
-#### Summary
-* Update infrastructure code should be designed to avoid *loss of service*
-* Update strategies that ensure healthy system is always running are crucial
-* Alternatives based on cost, hardware, ease of implementation
-  - Blue-green
-  - Rolling Upgrade
+
+#### Ansible set theory operators
+* The _hosts_ attribute has syntax for set theory operations on inventory 
+* These enable fine control over which hosts playbooks operate
+
+
+#### Union
+
+Combination of hosts in two groups
+
+![union](img/union.svg "Union") <!-- .element: width="20%" height="20%" -->
+
+All hosts in<!-- .element: class="fragment" data-fragment-index="0" --> _web_ and _db_ groups 
+
+<pre  class="fragment" data-fragment-index="0"><code data-trim data-noescape>
+- name: Union of hosts
+  <mark>hosts: web:db</mark>
+  tasks:
+</code></pre>
+
+
+#### Intersection
+
+Hosts that are in first and second group
+
+![Intersect](img/intersect.svg "Intersection") <!-- .element: width="20%"
+height="20%" -->
+
+Hosts that are in both the<!-- .element: class="fragment" data-fragment-index="0" --> _web_ and the _blue_ group 
+
+<pre  class="fragment" data-fragment-index="0"><code data-trim data-noescape>
+- name: Intersection of hosts
+  <mark>hosts: web:&blue</mark>
+  tasks:
+</code></pre>
+
+
+#### Difference
+
+Set of hosts in first set but not in second set
+
+![Difference](img/difference.svg "Difference")<!-- .element: width="20%"
+height="20%" -->
+
+Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" --> _app_ group **but not** in the _active_ group
+
+<pre  class="fragment" data-fragment-index="0"><code data-trim data-noescape>
+- name: Difference of groups
+  <mark>hosts: app:!active</mark>
+  tasks:
+</code></pre>
 

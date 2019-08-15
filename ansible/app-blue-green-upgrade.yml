@@ -31,6 +31,7 @@
 
 - name: Update app in inactive half of cluster
   become: true
+  # ADD host in app but not active
   hosts: app:!active
   any_errors_fatal: true
   vars:
