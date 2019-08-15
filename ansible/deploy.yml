@@ -104,7 +104,7 @@
       changed_when:
         - create_table_output.rc == 0
         - create_table_output.stderr is not search('already exists')
-                                                                                                                                                                                                                                  
+
     - name: Add images to new table
       command: |
         psql -U {{ database_user }} -h localhost 

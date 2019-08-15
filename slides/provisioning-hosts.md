@@ -116,8 +116,8 @@ Note: Adds some extra security for our cluster
 #### Traversing a bastion host
 * <!-- .element: class="fragment" data-fragment-index="0" -->Ansible relies on SSH to talk to remote hosts
 * <!-- .element: class="fragment" data-fragment-index="1" -->Just need to pass SSH arguments for hosts in *private_net* group
-* <!-- .element: class="fragment" data-fragment-index="2" -->Assign to hostvars for each instance
-* <!-- .element: class="fragment" data-fragment-index="3" -->Add following to `provision-hosts.yml`
+* <!-- .element: class="fragment" data-fragment-index="2" -->Use `add_host` to
+  assign `ansible_ssh_common_args`
 
 ```
 # ADD SSH args
@@ -135,28 +135,24 @@ Note: Adds some extra security for our cluster
    loop: "{{ launch.results }}"
    when: item.openstack.name in groups.private_net
 ```
-<!-- .element: style="font-size:8pt;"  class="fragment"
+<!-- .element: style="font-size:7pt;"  class="fragment"
 data-fragment-index="3" -->
 
 
 #### Additional setup for hosts
-* Set NZ locale, timezone, etc.
 * Edit `/etc/hosts` on each host
-  * bastion host to resolve all hosts in cluster
-  * loadbalancer host to resolve all hosts in *web* group
+  * bastion host to resolve all hosts in cluster for SSH
   * _web_ to resolve _app_ host
   * _app_ host to resolve _db_
-* Update local machine `/etc/hosts` to resolve our loadbalancer public IP
+* Set NZ locale, timezone, etc.
 
 
-#### Setup the basics
-* `/etc/host` mappings
-* locales
-* Add the following section to playbook
+#### Resolving for SSH
+* Add following to playbook
 
 ```yaml
-# ADD host IP, locale
-- name: Set up the bastion hosts
+# ADD bastion -> private_net for SSH
+- name: Set up the bastion host mapping
   hosts: bastion
   become: true
   tasks:
@@ -165,59 +161,58 @@ data-fragment-index="3" -->
         dest: /etc/hosts
         line: "{{ hostvars[item].ansible_host }} {{ item }}"
       with_items: "{{ groups.private_net }}"
+```
+<!-- .element: style="font-size:10pt;"  -->
 
-- name: Common setup for all hosts
-  hosts: cluster
-  become: true
-  tasks:
-    - name: Add NZ locale to all instances
-      locale_gen:
-        name: en_NZ.UTF-8
-        state: present
+
+#### Resolving application services
+* Set up resolution for application components (i.e. nginx and application)
 
 ```
-<!-- .element: style="font-size:8pt;"  -->
-
-
-#### Delegation
-* Often need to configure one host *in the context of another host*
-* Run a command on server **A** using inventory from **B**
-  * enable/disable web hosts at the load balancer
-* The `delegate_to` directive is useful for this
-
-
-#### Resolving application services and delegation
-* Add the following plays to `provision-hosts.yml`
-
-<pre style="font-size:8pt;"><code data-trim data-noescape>
-# ADD resolving application components
+# ADD web -> app for proxy pass
 - name: Set up web hosts with mapping to backend
-  <mark>hosts: app</mark>
+  hosts: web
   become: true
   tasks:
 
     - name: Map each frontend host to speak to a specific backend
       lineinfile:
         dest: /etc/hosts
-        line: "{{ ansible_host }} backend"
-      <mark>delegate_to: "{{ prefix }}-web{{ group_index }}"</mark>
-</code></pre>
+        line: "{{ hostvars[groups.app[(group_index | int) - 1]].ansible_host }} backend"
 
-
-#### Resolving application services and delegation
-<pre style="font-size:8pt;"><code data-trim data-noescape>
+# ADD app -> db for application
 - name: Add mapping for db on app boxes
-  <mark>hosts: db</mark>
+  hosts: app
   become: true
   tasks:
 
     - name: Map each app host to speak to db
       lineinfile:
         dest: /etc/hosts
-        line: "{{ ansible_host }} {{ inventory_hostname }}"
-      <mark>delegate_to: "{{ item }}"</mark>
-      with_items: "{{ groups.app }}"
-</code></pre>
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+      with_items: "{{ groups.db }}"
+```
+<!-- .element: style="font-size:8pt;"  -->
+
+
+#### Set up locale and timezone
+```
+# ADD locale and timezone
+- name: Set locale and local timezone
+  hosts: cluster
+  become: true
+  tasks:
+
+    - name: Add NZ locale to all instances
+      locale_gen:
+        name: en_NZ.UTF-8
+        state: present
+
+    - name: Set local timezone
+      timezone:
+        name: Pacific/Auckland
+```
+<!-- .element: style="font-size:10pt;"  -->
 
 
 #### Provisioning Hosts
@@ -227,5 +222,37 @@ data-fragment-index="3" -->
    ```
    <!-- .element: style="font-size:11pt;" class="stretch"  -->
 
+* Should take a few minutes to set up cluster
 * In case task fails with SSH error just hit `CTRL-C` and restart
 <!-- .element: class="stretch"  -->
+
+
+#### `ansible-inventory`
+* Useful to gather info about hosts
+  - public IP
+  - groups
+* Can use `ansible-inventory` to gather info about cluster
+  ```shell
+  ansible-inventory --list
+  ```
+  ```shell
+  ansible-inventory --host pycon-bastion
+  ```
+* Pipe output through tools like [`jq`](https://stedolan.github.io/jq/)
+
+
+#### Get bastion IP
+* We'll need the bastion IP if we want to SSH into hosts in the cluster
+  ```shell
+  ansible-inventory --host pycon-bastion | jq '{"publicIP": .openstack.public_v4}'
+  ```
+  <!-- .element: style="font-size:12pt;"  -->
+  ```json
+  {
+    "publicIP": "202.49.242.143"
+  }
+  ```
+* Use this to SSH into cluster
+  ```shell
+  ssh -A -t ubuntu@202.49.242.143 ssh pycon-web1
+  ```

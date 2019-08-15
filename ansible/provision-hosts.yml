@@ -163,6 +163,7 @@
 
       delegate_to: localhost
 
+
 - name: Check connectivity to hosts
   hosts: cluster:!bastion
   gather_facts: false
@@ -172,8 +173,8 @@
       wait_for_connection:
       delegate_to: localhost
 
-# ADD host IP, locale
-- name: Set up the bastion hosts
+# ADD bastion -> private_net for SSH
+- name: Set up the bastion host mapping
   hosts: bastion
   become: true
   tasks:
@@ -183,19 +184,7 @@
         line: "{{ hostvars[item].ansible_host }} {{ item }}"
       with_items: "{{ groups.private_net }}"
 
-
-- name: Common setup for all hosts
-  hosts: cluster
-  become: true
-  tasks:
-
-    - name: Add NZ locale to all instances
-      locale_gen:
-        name: en_NZ.UTF-8
-        state: present
-
-# ADD resolving application components
-
+# ADD web -> app for proxy pass
 - name: Set up web hosts with mapping to backend
   hosts: web
   become: true
@@ -206,6 +195,7 @@
         dest: /etc/hosts
         line: "{{ hostvars[groups.app[(group_index | int) - 1]].ansible_host }} backend"
 
+# ADD app -> db for application
 - name: Add mapping for db on app boxes
   hosts: app
   become: true
@@ -216,3 +206,18 @@
         dest: /etc/hosts
         line: "{{ hostvars[item].ansible_host }} {{ item }}"
       with_items: "{{ groups.db }}"
+
+# ADD locale and timezone
+- name: Set locale and local timezone
+  hosts: cluster
+  become: true
+  tasks:
+
+    - name: Add NZ locale to all instances
+      locale_gen:
+        name: en_NZ.UTF-8
+        state: present
+
+    - name: Set local timezone
+      timezone:
+        name: Pacific/Auckland

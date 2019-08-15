@@ -5,14 +5,14 @@
 #    -e app_version= 
 #         v1 or v2 or v3 (existing version of app)
 
-#- import_playbook: sort-inventory-hosts.yml
 - import_playbook: lb-host.yml
 
 - name: Upgrade application in place
   become: true
   hosts: app
+  # Serial attribute
   serial: 1
-  any_errors_fatal: true
+  max_fail_percentage: 51
   tags:
     - app
   vars:
@@ -20,6 +20,7 @@
 
   tasks:
 
+    # ADD disable application at lb
     - name: Disable application at load balancer
       haproxy:
         backend: catapp-backend
@@ -30,13 +31,16 @@
 
     - import_tasks: tasks/setup-app.yml
 
+    # ADD flush handlers
     - meta: flush_handlers
 
+    # ADD wait for 5000
     - name: Make sure gunicorn is accepting connections
       wait_for:
         port: 5000
         timeout: 60
 
+    # ADD enable application at lb
     - name: Re-enable application at load balancer
       haproxy:
         backend: catapp-backend

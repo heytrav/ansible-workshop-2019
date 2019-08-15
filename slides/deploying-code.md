@@ -9,40 +9,75 @@
   * HA proxy
 
 
-#### Reaching our servers
-* Ansible needs to interact with our hosts via SSH
-* However, we do not know how to reach our cluster
-  - local inventory does not contain IP addresses
-* Need to get info from OpenStack API
+#### Overview of deploy playbook
+* `ansible-playbook --list-tasks <playbook>` gives an overview of plays and
+  tasks 
+  ```
+  ansible-playbook ansible/deploy.yml --list-tasks
+  ```
+  ```
+  play #1 (private_net): Set ansible_host for private hosts     TAGS: []                                                                                  [0/19740]
+    tasks:
+    .
+  play #2 (cluster): Update apt cache on all machines   TAGS: []
+    tasks:
+    .
+
+  play #3 (db): Set up database machine TAGS: [deploy,db]
+    tasks:
+    .
+
+  play #4 (db): Set up app and database machine TAGS: [deploy,db]
+    tasks:
+    .
+
+  play #5 (app): Set up app server      TAGS: [deploy,app]
+    tasks:
+    .
+
+  play #6 (web): Set up nginx on web server     TAGS: [deploy,web]
+    tasks:
+    .
+  ```
+  <!-- .element: style="font-size:8pt;"  -->
 
 
-#### Dynamic inventories
-* Programmatically extract info from cloud API using dynamic inventory
-* Download and set up the openstack inventory script
-```
-mkdir -p ansible/inventory/dynamic
-wget https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/openstack_inventory.py
-chmod +x openstack_inventory.py
-mv openstack_inventory.py ansible/inventory/dynamic/
-```
-<!-- .element: style="font-size:10pt;"  -->
+#### Role of Inventory and Groups
+* _hosts_ attribute influences which hosts Ansible interacts with
+  <pre><code data-trim data-noescape>
+  hosts: <mark>web</mark>
+  </code></pre>
+* This will interact with all hosts in the _web_ group ![web-group](img/cotd-venn-web.png "Web group") <!-- .element: class="img-right" width="45%" -->
 
 
-#### Deploying our application
-* The<!-- .element: class="fragment" data-fragment-index="0" --> `deploy.yml` playbook:
-  - configures machines 
-  - sets up database
-  - deploys our web application
-  - Configures the loadbalancer to direct HTTP between web1 and web2
-* Should be able to access your new <!-- .element: class="fragment" data-fragment-index="1" --> <a href="http://my-app.cat">web application</a> 
-* <!-- .element: class="fragment" data-fragment-index="2" -->View [loadbalancer admin page](http://my-app.cat/haproxy?stats)
-  - login: admin
-  - password is in `group_vars/loadbalancer/secrets.yml`
+#### Role of Inventory and Groups
+  <pre><code data-trim data-noescape>
+  hosts: <mark>app</mark>
+  </code></pre>
+* This will interact with all hosts in the _app_ group ![app-group](img/cotd-venn-app.png "App group") <!-- .element: class="img-right" width="45%" -->
 
 
-#### Summary
+#### Deploying the application
+* Run the deploy playbook
+  ```shell
+  ansible-playbook ansible/deploy.yml
+  ```
+* Once deploy is finished you'll need the IP of your loadbalancer
+  ```
+  ansible-inventory --host pycon-lb | jq '{"publicIP": .openstack.public_v4}'
+  ```
+  <!-- .element: style="font-size:10pt;"  -->
+* Should be able to open in your browser as:
+  ```
+  http://<public ip>.xip.io/
+  ```
 
-* Ansible has modules for provisioning at different cloud providers
-  - As localhost
-* Able to use SSH options for configuring via bastion host
-* Easy to set up load balanced applications
+
+#### Viewing HAProxy stats
+* HAProxy provides an overview of active web hosts in cluster
+  ```
+  http://<public ip>.xip.io/haproxy?stats
+  ```
+* Login details
+  - user: admin
+  - password: train
