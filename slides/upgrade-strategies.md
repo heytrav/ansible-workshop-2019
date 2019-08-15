@@ -261,7 +261,86 @@ width="50%" height="50%"-->
 
 #### Blue Green Deployments
 ![start](img/blue-green-state0.png "Blue Green Start")
-* Start deployment with traffic going through *blue* hosts
+
+Start with all traffic going to _blue_ hosts
+
+
+#### Begin update
+![blue-green-step1](img/blue-green-state1.png "Blue Green begin upgrade")
+
+Update traffic on _green_ hosts
+
+
+#### Check green is ok
+![blue-green-step2](img/blue-green-state2-ok.png "Blue green green ok")
+
+Direct traffic through green and verify ok
+
+
+#### Update blue side of cluster
+![blue-green-step3](img/blue-green-state3.png "Update blue side")
+
+Ok, so update _blue_ side
+
+
+#### Reset traffic to blue
+![blue-green-step4](img/blue-green-state4.png "Reset traffic to blue")
+
+Reset traffic to _blue_ side of cluster
+
+
+#### Dealing with failure
+![blue-green-step2-fail](img/blue-green-state2-fail.png "Green fails")
+
+Alternative if green app not healthy
+
+
+#### Return to original state
+![blue-green-original](img/blue-green-state1.png "Return to original state")
+
+Redirect traffic back to _blue_
+
+
+#### Setting up Blue-Green
+* We need to do is put our cluster in _blue-green_ mode
+* <!-- .element: class="fragment" data-fragment-index="0" -->First reset our environment
+  ```
+   ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+  ```
+* <!-- .element: class="fragment" data-fragment-index="1" -->Run the following playbook:
+  ```
+  ansible-playbook ansible/setup-blue-green.yml -e live=blue
+  ```
+* <!-- .element: class="fragment" data-fragment-index="2" -->Verify half of cluster active on HAProxy stats page
+
+
+#### Blue green update playbook
+* For blue green we will use the following playbook
+```
+ansible/app-blue-green-upgrade.yml
+```
+
+
+#### Ad hoc groups
+* For _blue-green_ we need to assign _active_ and _not active_ half of cluster
+* Can assign groups of host to ad hoc groups when running Ansible
+* By default we declare _blue_ active
+   <pre style="font-size:10pt;" class="fragment" data-fragment-index="0" ><code data-trim data-noescape>
+   # ADD set active group
+  - name: Set live group as active
+    hosts: localhost
+    gather_facts: false
+    vars:
+      active: "{{ groups[ live | default('blue') ] }}"
+    tasks:
+      - name: Add active hosts to group
+        <mark>add_host:</mark>
+        <mark>  name: "{{ item }}"</mark>
+        <mark>  groups:</mark>
+        <mark>    - active</mark>
+        with_items: "{{ active | default(groups.blue_green) }}"
+</code></pre>
+* <!-- .element: class="fragment" data-fragment-index="1" -->Can override with `-e live=green`
 
 
 

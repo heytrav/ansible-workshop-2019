@@ -13,12 +13,12 @@
 #- import_playbook: sort-inventory-hosts.yml
 - import_playbook: lb-host.yml
 
+# ADD set active group
 - name: Set live group as active
   hosts: localhost
   gather_facts: false
   vars:
     active: "{{ groups[ live | default('blue') ] }}"
-
   tasks:
     - name: Add active hosts to group
       add_host:
