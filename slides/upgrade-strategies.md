@@ -316,9 +316,9 @@ Redirect traffic back to _blue_
 
 #### Blue green update playbook
 * For blue green we will use the following playbook
-```
-ansible/app-blue-green-upgrade.yml
-```
+  ```
+  ansible/app-blue-green-upgrade.yml
+  ```
 
 
 #### Ad hoc groups
@@ -360,6 +360,7 @@ ansible/app-blue-green-upgrade.yml
 
 
 #### Union
+##### A ∪ B
 
 Combination of hosts in two groups
 
@@ -375,6 +376,7 @@ All hosts in<!-- .element: class="fragment" data-fragment-index="0" --> _web_ an
 
 
 #### Intersection
+##### A ∩ B
 
 Hosts that are in first and second group
 
@@ -391,6 +393,7 @@ Hosts that are in both the<!-- .element: class="fragment" data-fragment-index="0
 
 
 #### Difference
+##### A \ B
 
 Set of hosts in first set but not in second set
 
@@ -405,3 +408,95 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
   tasks:
 </code></pre>
 
+
+#### Set operators and upgrade
+* <!-- .element: class="fragment" data-fragment-index="0" -->Update app in inactive part of cluster
+  ```
+  # ADD app difference active
+  hosts: app:!active
+  ```
+* <!-- .element: class="fragment" data-fragment-index="1" -->Should update app2 ![venn-blue-green-start](img/cotd-blue-green-venn-active.png "Blue green start") <!-- .element: class="img-right" -->
+
+
+#### Verify app is running
+* <!-- .element: class="fragment" data-fragment-index="0" -->Check port is open on app
+  ```
+  # ADD check port 5000
+  - name: Make sure gunicorn is accepting connections
+    wait_for:
+      port: 5000
+      timeout: 60
+  ```
+
+#### Enabling traffic to green
+* Use delegation to enable traffic to green at loadbalancer
+  ```
+  # ADD web intersect active
+  - name: Enable traffic to updated app server
+    hosts: web:!active
+    become: true
+    tasks:
+      - name: Enable application at load balancer
+        haproxy:
+          backend: catapp-backend
+          host: "{{ inventory_hostname }}"
+          state: enabled
+        delegate_to: "{{ item }}"
+        loop: "{{ groups.loadbalancer }}"
+  ```
+
+
+#### Stop traffic to blue
+* Now disable blue side at loadbalancer
+  ```
+  # ADD web intersect active
+  - name: Stop traffic to initial live group
+    hosts: web:&active
+    become: true
+    tasks:
+      - name: Disable application at load balancer
+        haproxy:
+          backend: catapp-backend
+          host: "{{ inventory_hostname }}"
+          state: disabled
+        delegate_to: "{{ item }}"
+        loop: "{{ groups.loadbalancer }}"
+  ```
+
+#### Run blue green upgrade
+* Let's run the blue green upgrade playbook
+  ```
+  ansible-playbook ansible/app-blue-green-upgrade.yml -e app_version=v2
+  ```
+* Can switch back to blue active by running 
+  ```
+  ansible-playbook ansible/setup-blue-green.yml -e live=blue
+  ``
+* Try running upgrade with v3 and v4
+
+
+#### Additional check
+* <!-- .element: class="fragment" data-fragment-index="0" -->May want to make additional checks on site
+* <!-- .element: class="fragment" data-fragment-index="1" -->v4 works but does not display version on site
+* <!-- .element: class="fragment" data-fragment-index="2" -->Add additional check to play
+  ```
+  # ADD check version display
+  - name: Check that the site is reachable via nginx
+    uri:
+      url: "http://{{ ansible_host }}:5000"
+      status_code: 200
+      return_content: yes
+      headers:
+        HOST: my-app.cats
+    register: app_site
+    failed_when: "'version: ' + app_version not in app_site.content"
+    delegate_to: "{{ web_server }}"
+  ```
+
+
+
+### The End
+* Please clean up your clusters
+  ```
+  ansible-playbook ansible/remove-hosts.yml
+  ```

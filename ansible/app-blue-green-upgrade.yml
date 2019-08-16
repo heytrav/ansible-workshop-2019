@@ -31,7 +31,7 @@
 
 - name: Update app in inactive half of cluster
   become: true
-  # ADD host in app but not active
+  # ADD app difference active
   hosts: app:!active
   any_errors_fatal: true
   vars:
@@ -41,11 +41,13 @@
 
     - meta: flush_handlers
 
+    # ADD check port 5000
     - name: Make sure gunicorn is accepting connections
       wait_for:
         port: 5000
         timeout: 60
 
+    # ADD check version display
     - name: Check that the site is reachable via nginx
       uri:
         url: "http://{{ ansible_host }}:5000"
@@ -64,6 +66,7 @@
         state: restarted
 
 
+# ADD web difference active
 - name: Enable traffic to updated app server
   hosts: web:!active
   become: true
@@ -77,6 +80,7 @@
       loop: "{{ groups.loadbalancer }}"
 
 
+# ADD web intersect active
 - name: Stop traffic to initial live group
   hosts: web:&active
   become: true
