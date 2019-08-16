@@ -410,28 +410,32 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 
 
 #### Set operators and upgrade
+* Update playbook similar to rolling upgrade example
 * <!-- .element: class="fragment" data-fragment-index="0" -->Update app in inactive part of cluster
   ```
-  # ADD app difference active
+  # ADD set to update
   hosts: app:!active
   ```
-* <!-- .element: class="fragment" data-fragment-index="1" -->Should update app2 ![venn-blue-green-start](img/cotd-blue-green-venn-active.png "Blue green start") <!-- .element: class="img-right" -->
+* <!-- .element: class="fragment" data-fragment-index="1" -->Should update app2 ![venn-blue-green-start](img/cotd-blue-green-venn-active.png "Blue green start") <!-- .element: class="img-right" width="50%"-->
 
 
 #### Verify app is running
-* <!-- .element: class="fragment" data-fragment-index="0" -->Check port is open on app
-  ```
-  # ADD check port 5000
-  - name: Make sure gunicorn is accepting connections
-    wait_for:
-      port: 5000
-      timeout: 60
-  ```
+*  Restart the app and verify it is listening on port
+   ```
+   # ADD flush handlers and check port
+   - meta: flush_handlers
+
+   - name: Make sure gunicorn is accepting connections
+     wait_for:
+       port: 5000
+       timeout: 60
+   ```
+
 
 #### Enabling traffic to green
 * Use delegation to enable traffic to green at loadbalancer
   ```
-  # ADD web intersect active
+  # ADD enable traffic to inactive
   - name: Enable traffic to updated app server
     hosts: web:!active
     become: true
@@ -449,7 +453,7 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 #### Stop traffic to blue
 * Now disable blue side at loadbalancer
   ```
-  # ADD web intersect active
+  # ADD disable traffic to active side
   - name: Stop traffic to initial live group
     hosts: web:&active
     become: true
@@ -462,6 +466,7 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
         delegate_to: "{{ item }}"
         loop: "{{ groups.loadbalancer }}"
   ```
+
 
 #### Run blue green upgrade
 * Let's run the blue green upgrade playbook

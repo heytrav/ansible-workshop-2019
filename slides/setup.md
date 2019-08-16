@@ -1,6 +1,20 @@
 ### Setup
 
 
+#### Checkout the code
+* Clone the course material and sample code
+  ```
+  git clone https://github.com/heytrav/
+  ```
+* If you have nodejs installed
+  ```
+  cd <directory>/slides
+  npm install
+  npm start
+  ```
+* ..or follow along in pdf in base directory
+
+
 #### Installing Ansible
 * For this workshop we'll be using Ansible &ge; 2.8
 * [Installation options](http://docs.ansible.com/ansible/latest/intro_installation.html)
