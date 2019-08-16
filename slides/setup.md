@@ -4,11 +4,11 @@
 #### Checkout the code
 * Clone the course material and sample code
   ```
-  git clone https://github.com/heytrav/
+  git clone https://github.com/heytrav/ansible-workshop-2019.git
   ```
 * If you have nodejs installed
   ```
-  cd <directory>/slides
+  cd ansible-workshop-2019/slides
   npm install
   npm start
   ```
