@@ -31,7 +31,7 @@
 
 - name: Update app in inactive half of cluster
   become: true
-  # ADD app difference active
+  # ADD set to update
   hosts: app:!active
   any_errors_fatal: true
   vars:
@@ -39,9 +39,9 @@
   tasks:
     - import_tasks: tasks/setup-app.yml
 
+    # ADD flush handlers and check port
     - meta: flush_handlers
 
-    # ADD check port 5000
     - name: Make sure gunicorn is accepting connections
       wait_for:
         port: 5000
@@ -66,7 +66,7 @@
         state: restarted
 
 
-# ADD web difference active
+# ADD enable traffic to inactive
 - name: Enable traffic to updated app server
   hosts: web:!active
   become: true
@@ -80,7 +80,7 @@
       loop: "{{ groups.loadbalancer }}"
 
 
-# ADD web intersect active
+# ADD disable traffic to active side
 - name: Stop traffic to initial live group
   hosts: web:&active
   become: true

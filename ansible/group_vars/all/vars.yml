@@ -19,13 +19,12 @@ subnet_dhcp_end: "{{ subnet_prefix }}.200"
 
 default_os_image: ubuntu-18.04-x86_64
 default_flavor: c1.c1r1
-
+region: "{{ lookup('env', 'OS_REGION_NAME') | default('nz-hlz-1') }}"
 region_nameservers:
   nz-por-1: [202.78.247.197, 202.78.247.198, 202.78.247.199]
   nz_wlg_2: [202.78.240.213, 202.78.240.214, 202.78.240.215]
   nz-hlz-1: [202.78.244.85, 202.78.244.86, 202.78.244.87]
-
-default_nameservers: "{{ region_nameservers['nz-por-1'] }}"
+default_nameservers: "{{ region_nameservers[region] }}"
 
 main_security_groups:
   - {group: "managed{{ suffix }}", port: 22, remote_group: "bastion{{ suffix }}"}
