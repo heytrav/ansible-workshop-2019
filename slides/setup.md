@@ -57,9 +57,11 @@
 * We can avoid having ansible complain about not finding a vault password
 * The `ansible.cfg` file is set up to look for a file called `.default_id`
   ```ini
-  vault_identity_list = .default_id
+  vault_identity_list = default@.default_id
   ```
 * Create an identity file to store the password
   ```
   echo "train" > .default_id
   ```
+
+[Back to outline](course-outline.md)
