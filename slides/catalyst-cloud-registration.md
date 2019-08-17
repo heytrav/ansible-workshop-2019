@@ -29,4 +29,5 @@ Note: This will need to be done each time a new terminal is opened if
 particpants want to connect via openstacksdk
 
 
-[Back to outline](course-outline.md)
+* [Back to outline](course-outline.md)
+* [Setup](setup.md)
