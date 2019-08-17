@@ -71,6 +71,7 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
   ```shell
   git clone https://github.com/heytrav/ansible-workshop-2019.git
   ```
+* 
   <!-- .element: style="font-size:11pt;"  -->
 * ..or follow along in pdf in base directory
 
