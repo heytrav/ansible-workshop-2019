@@ -10,7 +10,8 @@
 
 
 #### Download OpenStack credentials
-* Download OpenStack rc file![config-download](img/os-config-download.png "Download OS config") <!-- .element: class="img-right" width="80%" -->
+* In upper right corner under your account name![config-download](img/os-config-download.png "Download OS config") <!-- .element: class="img-right" width="80%" -->
+* Download _OpenStack RC File v3_
 
 
 #### OpenStack SDK login

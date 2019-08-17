@@ -3,15 +3,10 @@
 
 #### Checkout the code
 * Clone the course material and sample code
-  ```
+  ```shell
   git clone https://github.com/heytrav/ansible-workshop-2019.git
   ```
-* If you have nodejs installed
-  ```
-  cd ansible-workshop-2019/slides
-  npm install
-  npm start
-  ```
+  <!-- .element: style="font-size:11pt;"  -->
 * ..or follow along in pdf in base directory
 
 
@@ -55,3 +50,16 @@
    pip install python-{openstackclient,ceilometerclient,heatclient,neutronclient,swiftclient,octaviaclient,magnumclient}
    ```
    <!-- .element: style="font-size:8pt;"  -->
+
+
+#### Decrypting vault secrets
+* Some variables are stored using `ansible-vault`
+* We can avoid having ansible complain about not finding a vault password
+* The `ansible.cfg` file is set up to look for a file called `.default_id`
+  ```ini
+  vault_identity_list = .default_id
+  ```
+* Create an identity file to store the password
+  ```
+  echo "train" > .default_id
+  ```

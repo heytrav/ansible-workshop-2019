@@ -2,3 +2,4 @@ venv
 .DS_Store
 ansible/roles
 slides/node_modules
+.default_id
