@@ -71,7 +71,13 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
   ```shell
   git clone https://github.com/heytrav/ansible-workshop-2019.git
   ```
-* Follow along on GitHub
+* Set up reveal slides
+  ```
+  cd ansible-workshop-2019/slides
+  npm install
+  npm start
+  ```
+* or follow along on GitHub
   - README -> [Course Outline](https://github.com/heytrav/ansible-workshop-2019/blob/master/slides/content.md#setup)
 * ..or follow along in pdf in base directory
 
