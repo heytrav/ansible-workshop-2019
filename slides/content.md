@@ -71,8 +71,8 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
   ```shell
   git clone https://github.com/heytrav/ansible-workshop-2019.git
   ```
-* 
-  <!-- .element: style="font-size:11pt;"  -->
+* Follow along on GitHub
+  - README -> [Course Outline](https://github.com/heytrav/ansible-workshop-2019/blob/master/slides/content.md#setup)
 * ..or follow along in pdf in base directory
 
 
@@ -117,18 +117,6 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
    ```
    <!-- .element: style="font-size:8pt;"  -->
 
-
-#### Decrypting vault secrets
-* Some variables are stored using `ansible-vault`
-* We can avoid having ansible complain about not finding a vault password
-* The `ansible.cfg` file is set up to look for a file called `.default_id`
-  ```ini
-  vault_identity_list = default@.default_id
-  ```
-* Create an identity file to store the password
-  ```
-  echo "train" > .default_id
-  ```
 
 
 ### Cloud Provider Account
