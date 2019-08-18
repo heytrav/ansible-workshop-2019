@@ -12,7 +12,6 @@
   hosts: app
   # Serial attribute
   serial: 1
-  max_fail_percentage: 51
   tags:
     - app
   vars:

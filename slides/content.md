@@ -101,28 +101,16 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
    ```
 
 
-###### Install Ansible
+###### Install Dependencies
 * <!-- .element: class="fragment" data-fragment-index="0" -->Update Python package manager (pip)
    ```
    pip install -U pip
    ```
-* <!-- .element: class="fragment" data-fragment-index="1" -->Use Python package manager to install Ansible
+* <!-- .element: class="fragment" data-fragment-index="1" -->Install
+  dependencies
    ```
-   pip install ansible
+   pip install -r requirements.txt
    ```
-
-
-###### Install OpenStack dependencies
-* Install OpenStack SDK
-   ```
-   pip install openstacksdk dnspython
-   ```
-* Install OpenStack client libraries
-   ```
-   pip install python-{openstackclient,ceilometerclient,heatclient,neutronclient,swiftclient,octaviaclient,magnumclient}
-   ```
-   <!-- .element: style="font-size:8pt;"  -->
-
 
 
 ### Cloud Provider Account
@@ -243,8 +231,8 @@ particpants want to connect via openstacksdk
                     </dl>
 
 
-#### Indentation & YAML
-* <!-- .element: class="fragment" data-fragment-index="0" -->YAML is a stickler for indentation
+#### YAML and indentation
+* <!-- .element: class="fragment" data-fragment-index="0" -->YAML is fussy about indentation
 * <!-- .element: class="fragment" data-fragment-index="1" -->TABS not allowed (Ansible will complain)
 * <!-- .element: class="fragment" data-fragment-index="2" -->Playbook indentation
   <pre style="font-size:10pt;"><code data-trim data-noescape>
@@ -257,10 +245,16 @@ particpants want to connect via openstacksdk
   <mark style="background-color:pink">        </mark>attr1: someattr
   <mark style="background-color:pink">        </mark>attr2: someattr
 </code></pre>
+* <!-- .element: class="fragment" data-fragment-index="2" -->Task file indentation
+  <pre style="font-size:10pt;"><code data-trim data-noescape>
+  - name: This is a task
+  <mark>  </mark>module: somehosts             # 2 spaces
+  <mark style="background-color:lightblue">    </mark>attr1: value1               # 4 spaces
+  <mark style="background-color:lightblue">    </mark>attr2: value2               # 4 spaces
+  <mark style="background-color:lightblue">    </mark>attr3: value3               # 4 spaces
+  <mark>  </mark>loop: "{{ list_of_items }}"   # 2 spaces
+</code></pre>
 * <!-- .element: class="fragment" data-fragment-index="3" -->Use an editor that supports YAML syntax
-  - Atom
-  - Vim
-  - Emacs
 
 
 #### Vim YAML setup
@@ -278,6 +272,40 @@ particpants want to connect via openstacksdk
   ```
   <!-- .element: style="font-size:11pt;"  -->
 
+
+
+#### Project Layout
+```
+ansible
+├── files
+│   └── rsyslog-haproxy.conf
+├── group_vars
+│   ├── all/
+│   ├── appcluster.yml
+│   ├── app.yml
+│   ├── bastion.yml
+│   ├── cluster/
+│   ├── db.yml
+│   ├── loadbalancer/
+│   ├── private_net.yml
+│   ├── publichosts.yml
+│   └── web.yml
+├── inventory
+│   ├── cloud-hosts
+│   └── openstack.yml
+├── lb-host.yml
+├── app-blue-green-upgrade.yml
+├── app-rolling-upgrade.yml
+├── blue-green-start-switch.yml
+├── deploy.yml
+├── provision-hosts.yml
+├── remove-hosts.yml
+├── setup-blue-green.yml
+├── tasks
+├── templates
+│   ├── config.py.j2
+```
+<!-- .element: style="font-size:11pt;"  -->
 
 
 ### Provisioning Hosts
@@ -304,55 +332,81 @@ particpants want to connect via openstacksdk
 
 
 #### Host Inventory
-* The inventory for our cluster is defined in 
-  ```shell
-  ansible/inventory/cloud-hosts
-  ```
 * Architecture defined using Ansible _groups_
-  ```ini
-  [loadbalancer]
-  pycon-lb
 
-  [web]
-  pycon-web[1:2]# range of hosts i.e. pycon-web1, pycon-web2
+```shell
+ansible/inventory/cloud-hosts
+```
+<div style="float:left;font-size:12pt;" width="50%"><pre ><code data-trim data-noescape>
+localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python"
 
-  [app]
-  pycon-app[1:2] 
-  ```
-  <!-- .element: style="font-size:9pt;"  -->
-* Hosts may belong to multiple groups
-  ```ini
-  [web]
-  pycon-web[1:2]
+[controller]
+localhost
 
-  [blue]
-  pycon-web1
-  ```
-  <!-- .element: style="font-size:9pt;"  -->
+[appcluster]
+pycon-web[1:2]
+pycon-app[1:2]
+pycon-db
+
+[loadbalancer]
+pycon-lb
+
+[bastion]
+pycon-bastion
+
+[web]
+pycon-web[1:2]
+
+[db]
+pycon-db
+
+[app]
+pycon-app[1:2]
+
+[publichosts:children]
+bastion
+loadbalancer
+
+[private_net:children]
+appcluster
+loadbalancer
+</code></pre></div>  
+
+<div style="float:left;font-size:13pt;" ><pre ><code data-trim data-noescape>
+ansible
+├── group_vars/                                    .
+│   ├── all/
+│   ├── appcluster.yml
+│   ├── app.yml
+│   ├── bastion.yml
+│   ├── cluster/
+│   ├── db.yml
+│   ├── loadbalancer/
+│   ├── private_net.yml
+│   ├── publichosts.yml
+│   └── web.yml                      
+</code></pre></div>  
 
 
-#### High Level View <!-- .slide: class="image-slide" -->
+#### Inventory Host Grouping <!-- .slide: class="image-slide" -->
 ![cotd-venn](img/cotd-venn.png "COTD venn diagram")
 
 
 #### The `provision-hosts.yml` playbook
 * <!-- .element: class="fragment" data-fragment-index="0" -->Tasks in the
   first play are executed on local machine
-   <pre style="font-size:10pt;"><code data-trim data-noescape>
+   <pre style="font-size:9pt;"><code data-trim data-noescape>
    name:  Provision a set of hosts in Catalyst Cloud
    hosts: <mark>localhost</mark>
    gather_facts: false
+   vars:
+     <mark class="fragment" data-fragment-index="1">host_set: "{{ groups.cluster }}"</mark>
+     <mark class="fragment" data-fragment-index="2">security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"</mark>
+     <mark class="fragment" data-fragment-index="2">security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"</mark>
    tasks:
 </code></pre>
-* <!-- .element: class="fragment" data-fragment-index="1" -->Behind the scenes using the `openstacksdk` API
-* <!-- .element: class="fragment" data-fragment-index="2" -->Boilerplate for creating multiple cloud hosts
-  - log in to cloud provider
-  - create router, network, security groups
-  - create each host
-
-Note:
-- all tasks with os in module are cloud api
-- building cloud modules generally boilerplate
+* <!-- .element: class="fragment" data-fragment-index="1" -->We need to pass Ansible set of hosts we are creating
+* <!-- .element: class="fragment" data-fragment-index="2" -->Combine security groups for each host
 
 
 #### Cloud Modules
@@ -361,7 +415,20 @@ Note:
   - Networks
   - Security groups, acls, etc
 * We are using [OpenStack Modules](https://docs.ansible.com/ansible/latest/modules/list_of_cloud_modules.html#openstack)
-  - All start with `os_`
+  - The modules that start with `os_`
+
+
+#### Setting up cloud resources
+* <!-- .element: class="fragment" data-fragment-index="1" -->Behind the scenes using the OpenStack API
+  - same endpoints used by `openstacksdk` CLI
+* <!-- .element: class="fragment" data-fragment-index="2" -->Boilerplate for creating multiple cloud hosts
+  - log in to cloud provider
+  - create router, network, security groups
+  - create each host
+
+Note:
+- all tasks with os in module are cloud api
+- building cloud modules generally boilerplate
 
 
 #### Using OpenStack cloud modules
@@ -544,7 +611,7 @@ data-fragment-index="3" -->
 
 
 #### Deploying our application
-* The `deploy.yml` playbook sets up the _Cat Pic of the Day_ application ![Basic app](img/simple-project-app.svg "cotd application") <!-- .element: class="img-right" width="50%"-->
+* The `deploy.yml` playbook sets up our application ![Basic app](img/simple-project-app.svg "cotd application") <!-- .element: class="img-right" width="50%"-->
   * Web server running nginx
   * App server running a Python Flask
   * Postgresql Database
@@ -658,24 +725,22 @@ data-fragment-index="3" -->
 
 
 #### Upgrading applications
-* Rolling upgrade play similar to running just _app_ plays in `deploy.yml`
-  ```shell
-  ansible-playbook  ansible/app-rolling-upgrade.yml -e app_version=v2
-  ```
-  <!-- .element: style="font-size:10pt;"  -->
+```shell
+ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v2
+```
+* <!-- .element: class="fragment" data-fragment-index="0" -->At the moment there is no real difference to running
   ```
   ansible-playbook ansible/deploy.yml -e app_version=v2 --limit app
   ```
-  <!-- .element: style="font-size:10pt;"  -->
-* Tempting to rely on Ansible's idempotent behaviour
-* There are two problems with this approach
+* <!-- .element: class="fragment" data-fragment-index="1" -->Tempting to just rely on idempotent behaviour to _do the right thing_
+* <!-- .element: class="fragment" data-fragment-index="2" -->There are two problems with this approach
   - Ansible's default _batch management_ behaviour
   - `deploy.yml` does not check _health_ of application
 
 
-#### Ansible _batch management_ problem
+#### Default _batch management_ behaviour
 * By default runs each task on all hosts concurrently
-* <!-- .element: class="fragment" data-fragment-index="4" -->A failed task might leave cluster in a broken state
+* <!-- .element: class="fragment" data-fragment-index="4" -->A failed task might leave every host in cluster in a broken state
 
 |Tasks | Host1 | Host2 |
 |---   | ---   | ---   |
@@ -687,7 +752,7 @@ data-fragment-index="3" -->
 
 #### Deploying broken code
 * Broken code may not be obvious in task
-* <!-- .element: class="fragment" data-fragment-index="2" -->One task (<code style="color:red;">\*</code>) leaves application in a broken state
+* <!-- .element: class="fragment" data-fragment-index="2" --><code style="color:red;">\*</code>One task leaves application in a broken state
 
 |Tasks | Host1 | Host2 |
 |---   | ---   | ---   |
@@ -746,13 +811,11 @@ data-fragment-index="3" -->
 |task4 |   <code style="color:green;" class="fragment" data-fragment-index="3">ok</code>    |   <code style="color:green;" class="fragment" data-fragment-index="7">ok</code>    | 
 
 
-#### Detecting Failure
-* Need to detect broken application and stop deployment
-* Verify app is running after upgrade
-  - process id
-  - listening on port
-* The Flask web application that runs on app server listens on port 5000
-* Can use `wait_for` to stop and listen for port to be open before proceeding
+#### Failing fast
+* <!-- .element: class="fragment" data-fragment-index="0" -->Need to detect broken application and stop deployment
+* <!-- .element: class="fragment" data-fragment-index="1" -->Verify app is running after upgrade
+* <!-- .element: class="fragment" data-fragment-index="2" -->The Flask web application that runs on app server listens on port 5000
+* <!-- .element: class="fragment" data-fragment-index="3" -->Can use `wait_for` to stop and listen for port to be open before proceeding
 
 
 #### Listen on port
@@ -767,9 +830,9 @@ data-fragment-index="3" -->
 * We're still missing something so don't run the playbook yet!
 
 
-#### Kicking the handlers
+#### Flushing handlers
 * The application may not have loaded new configuration
-* We need to cause handler to restart gunicorn before waiting on port
+* We need to force handler to restart gunicorn before waiting on port
 * Add following to `app-rolling-upgrade.yml`
   ```
   # ADD flush handlers
@@ -790,17 +853,14 @@ data-fragment-index="3" -->
 
 
 #### Load balancing and upgrades
-* During an upgrade we change configuration and restart the application
-* Downtime might be disruptive to users of website
-* Following update with `app_version=v3` half of the application is also
-  broken
+* <!-- .element: class="fragment" data-fragment-index="0" -->During an upgrade we change configuration and restart the application
+* <!-- .element: class="fragment" data-fragment-index="1" -->Downtime might be disruptive to users of website
+* <!-- .element: class="fragment" data-fragment-index="2" -->Following update with `app_version=v3` half of the cluster is broken
   ```
   curl --head http://<public ip>.xip.io
   ```
   ```
-  < HTTP/1.1 502 Bad Gateway
   HTTP/1.1 502 Bad Gateway
-  .
   ```
 
 
@@ -816,9 +876,9 @@ data-fragment-index="3" -->
   - name: Play on app host
     <mark>hosts: app</mark>
   </code></pre>
-* <!-- .element: class="fragment" data-fragment-index="1" -->While on host `app1`, I can call all inventory variables by name, i.e.
+* <!-- .element: class="fragment" data-fragment-index="1" -->While on host `app1`, we can call all inventory variables by name, i.e.
   - `ansible_host`
-* <!-- .element: class="fragment" data-fragment-index="2" -->If I want variable for a different host, must use _hostvars_
+* <!-- .element: class="fragment" data-fragment-index="2" -->If we want variable for a different host, must use _hostvars_
   - hostvars['otherhost'].ansible_host
 
 
@@ -887,6 +947,9 @@ width="50%" height="50%"-->
 
 
 
+### Blue Green Deployments
+
+
 #### Blue Green Deployments
 ![start](img/blue-green-state0.png "Blue Green Start")
 
@@ -931,10 +994,11 @@ Redirect traffic back to _blue_
 
 #### Setting up Blue-Green
 * We need to do is put our cluster in _blue-green_ mode
-* <!-- .element: class="fragment" data-fragment-index="0" -->First reset our environment
+* First <!-- .element: class="fragment" data-fragment-index="0" -->reset our environment
   ```
-   ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+  ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
   ```
+  <!-- .element: style="font-size:11pt;"  -->
 * <!-- .element: class="fragment" data-fragment-index="1" -->Run the following playbook:
   ```
   ansible-playbook ansible/setup-blue-green.yml -e live=blue
@@ -947,6 +1011,28 @@ Redirect traffic back to _blue_
   ```
   ansible/app-blue-green-upgrade.yml
   ```
+* In our inventory
+  ```
+  # ansible/inventory/cloud-hosts
+  [blue]
+  pycon-web1
+  pycon-app1
+
+  [green]
+  pycon-web2
+  pycon-app2
+
+  [blue_green:children]
+  blue
+  green
+  ```
+  <!-- .element: style="font-size:11pt;"  -->
+
+
+#### Inventory and groups <!-- .slide: class="image-slide" -->
+
+![web-app-blue-green](img/web-app-blue-green.png "Web and app and blue
+green groups")
 
 
 #### Ad hoc groups
@@ -1095,16 +1181,20 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
         loop: "{{ groups.loadbalancer }}"
   ```
 
+<!-- .element: class="stretch"  -->
+
 
 #### Run blue green upgrade
 * Let's run the blue green upgrade playbook
   ```
   ansible-playbook ansible/app-blue-green-upgrade.yml -e app_version=v2
   ```
+  <!-- .element: style="font-size:11pt;"  -->
 * Can switch back to blue active by running 
   ```
   ansible-playbook ansible/setup-blue-green.yml -e live=blue
-  ``
+  ```
+  <!-- .element: style="font-size:11pt;"  -->
 * Try running upgrade with v3 and v4
 
 
@@ -1129,7 +1219,8 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 
 
 ### The End
-* Please clean up your clusters
+* Please do not forget to clean up your clusters!
   ```
   ansible-playbook ansible/remove-hosts.yml
   ```
+  <!-- .element: style="font-size:11pt;"  -->

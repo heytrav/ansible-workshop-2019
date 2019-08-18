@@ -4,6 +4,7 @@
   hosts: localhost
   gather_facts: false
   vars:
+    # ADD play variables
     host_set: "{{ groups.cluster }}"
     security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"
     security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"
