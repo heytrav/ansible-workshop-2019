@@ -38,10 +38,8 @@ oslo.log==3.44.0
 oslo.serialization==2.29.1
 oslo.utils==3.41.0
 pbr==5.4.2
-pkg-resources==0.0.0
 prettytable==0.7.2
 pycparser==2.19
-pyinotify==0.9.6
 pyOpenSSL==19.0.0
 pyparsing==2.4.2
 pyperclip==1.7.0
