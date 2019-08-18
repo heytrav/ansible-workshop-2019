@@ -41,16 +41,14 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
 * YAML
 
 
-#### Source material
-- Keating, Jesse. [*Mastering Ansible*](https://www.paktpub.com/au/networking-and-servers/mastering-ansbile). Packt, 2015
-- Hochstein, Lorin et al. *Ansible Up & Running 2nd Edition*.
-  O'Reilly, 2017
-- [https://docs.ansible.com/ansible/latest/user_guide/playbooks_delegation.html](https://docs.ansible.com/ansible/latest/user_guide/playbooks_delegation.html)
-- Based somewhat on my own experience
+#### Goals of this workshop
+* Examine different types of cluster deployment
+* See how we can use built-in features of Ansible to manage deploying and
+  upgrading
+* Provide tools that can be used in any build or CI/CD pipeline
 
 
-
-### Course Outline
+#### Course Outline
 * [Setup](#setup)
 * [Cloud Signup](#cloud-provider-account)
 * [Review basics](#ansible-basics)
@@ -59,7 +57,15 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
 * [Upgrade Strategies](#upgrade-strategies)
 * [In-place rolling upgrade](#in-place-rolling-upgrade)
 * [Blue Green](#blue-green-deployments)
-* [closing](#the-end)
+* [Closing](#the-end)
+
+
+#### Source material
+- Keating, Jesse. [*Mastering Ansible*](https://www.paktpub.com/au/networking-and-servers/mastering-ansbile). Packt, 2015
+- Hochstein, Lorin et al. *Ansible Up & Running 2nd Edition*.
+  O'Reilly, 2017
+- [https://docs.ansible.com/ansible/latest/user_guide/playbooks_delegation.html](https://docs.ansible.com/ansible/latest/user_guide/playbooks_delegation.html)
+- Based somewhat on my own experience
 
 
 
@@ -146,7 +152,7 @@ particpants want to connect via openstacksdk
 
 
 ### Ansible Basics
-##### (Just for review)
+##### (quick review)
 
 
 #### Terminology
@@ -273,7 +279,6 @@ particpants want to connect via openstacksdk
   <!-- .element: style="font-size:11pt;"  -->
 
 
-
 #### Project Layout
 ```
 ansible
@@ -308,6 +313,7 @@ ansible
 <!-- .element: style="font-size:11pt;"  -->
 
 
+
 ### Provisioning Hosts
 
 
@@ -328,20 +334,26 @@ ansible
 * <!-- .element: class="fragment" data-fragment-index="2" -->DB receives traffic from app hosts on 5432
 * <!-- .element: class="fragment" data-fragment-index="3" -->SSH traffic
   - only bastion reachable from outside
-  - all other hosts only from bastion
+  - all other hosts only SSH from bastion
 
 
-#### Host Inventory
+#### Inventory Host Grouping <!-- .slide: class="image-slide" -->
 * Architecture defined using Ansible _groups_
 
 ```shell
 ansible/inventory/cloud-hosts
 ```
+![cotd-venn](img/cotd-venn.png "COTD venn diagram") <!-- .element: width="70%"  -->
+
+
+#### Host Inventory
+* Inventory and groups fundamental to deploying and configuring
+
+<pre><code data-trim data-noescape>
+hosts: <mark>web</mark>
+</code></pre>
 <div style="float:left;font-size:12pt;" width="50%"><pre ><code data-trim data-noescape>
 localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python"
-
-[controller]
-localhost
 
 [appcluster]
 pycon-web[1:2]
@@ -354,8 +366,8 @@ pycon-lb
 [bastion]
 pycon-bastion
 
-[web]
-pycon-web[1:2]
+<mark>[web]</mark>
+<mark>pycon-web[1:2]</mark>
 
 [db]
 pycon-db
@@ -370,6 +382,11 @@ loadbalancer
 [private_net:children]
 appcluster
 loadbalancer
+
+[cluster:children]
+bastion
+loadbalancer
+appcluster
 </code></pre></div>  
 
 <div style="float:left;font-size:13pt;" ><pre ><code data-trim data-noescape>
@@ -384,29 +401,28 @@ ansible
 │   ├── loadbalancer/
 │   ├── private_net.yml
 │   ├── publichosts.yml
-│   └── web.yml                      
+│   <mark>└── web.yml</mark>                      
 </code></pre></div>  
-
-
-#### Inventory Host Grouping <!-- .slide: class="image-slide" -->
-![cotd-venn](img/cotd-venn.png "COTD venn diagram")
 
 
 #### The `provision-hosts.yml` playbook
 * <!-- .element: class="fragment" data-fragment-index="0" -->Tasks in the
   first play are executed on local machine
+* <!-- .element: class="fragment" data-fragment-index="1" -->We need to tell Ansible names of hosts we want to create
    <pre style="font-size:9pt;"><code data-trim data-noescape>
    name:  Provision a set of hosts in Catalyst Cloud
    hosts: <mark>localhost</mark>
    gather_facts: false
    vars:
-     <mark class="fragment" data-fragment-index="1">host_set: "{{ groups.cluster }}"</mark>
-     <mark class="fragment" data-fragment-index="2">security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"</mark>
-     <mark class="fragment" data-fragment-index="2">security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"</mark>
+     # ADD host_set and security groups
+     host_set: "{{ groups.cluster }}"
+     security_groups: "{{ host_set | map('extract', hostvars, 'security_groups') | sum(start=[]) | list | unique }}"
+     security_group_names: "{{ security_groups | map(attribute='group') | list | unique }}"
    tasks:
 </code></pre>
-* <!-- .element: class="fragment" data-fragment-index="1" -->We need to pass Ansible set of hosts we are creating
-* <!-- .element: class="fragment" data-fragment-index="2" -->Combine security groups for each host
+* <!-- .element: class="fragment" data-fragment-index="2" -->Extract security
+  groups for specific hosts from inventory
+* <!-- .element: class="fragment" data-fragment-index="3" -->Add the 3 variables under the comment to the _vars_ dictionary
 
 
 #### Cloud Modules
