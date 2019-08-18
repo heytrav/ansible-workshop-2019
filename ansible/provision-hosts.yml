@@ -52,7 +52,8 @@
         state: present
         security_group: "{{ item.group }}"
         protocol: "{{ item.proto | default('tcp') }}"
-        port_range_min: "{{ item.port }}"
+        port_range_min: "{{ omit if item.port == 'any' else item.port }}"
+        port_range_max: "{{ omit if item.port == 'any' else item.port_end | default(item.port) }}"
         remote_ip_prefix: "{{ item.remote_ip_prefix | default(omit) }}"
         remote_group: "{{ item.remote_group | default(omit) }}"
       with_items: "{{ security_groups }}"
