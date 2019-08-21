@@ -482,6 +482,7 @@ Note:
 
 #### Using OpenStack cloud modules
 * The first play uses cloud modules to create objects on your tenant
+* Add the following to `provision-hosts.yml`
 
 ```yaml
 # ADD create cloud resource methods
@@ -552,7 +553,7 @@ Note: Adds some extra security for our cluster
 * <!-- .element: class="fragment" data-fragment-index="1" -->Just need to pass SSH arguments for hosts in *private_net* group
 * <!-- .element: class="fragment" data-fragment-index="2" -->Use `add_host` to assign `ansible_ssh_common_args`
 
-```yaml
+```
  # ADD SSH args
  - name: Set ssh args for bastion
    add_host:
