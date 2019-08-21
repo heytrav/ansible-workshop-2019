@@ -1183,7 +1183,7 @@ green groups")
 
 
 
-### Group set theory
+### Set Operators
 
 
 #### Ansible set theory operators
