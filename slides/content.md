@@ -114,6 +114,56 @@ Presented by [Travis Holton](#) <!-- .element: class="small-text"  -->
    ```
 
 
+#### Project Layout
+* Source code for exercises is under the `ansible` folder
+
+```
+ansible.cfg
+ansible
+├── files
+│   └── rsyslog-haproxy.conf
+├── group_vars
+│   ├── all/
+│   ├── appcluster.yml
+│   ├── app.yml
+│   ├── bastion.yml
+│   ├── cluster/
+│   ├── db.yml
+│   ├── loadbalancer/
+│   ├── private_net.yml
+│   ├── publichosts.yml
+│   └── web.yml
+├── inventory
+│   ├── cloud-hosts
+│   └── openstack.yml
+├── lb-host.yml
+├── app-blue-green-upgrade.yml
+├── app-rolling-upgrade.yml
+├── blue-green-start-switch.yml
+├── deploy.yml
+├── provision-hosts.yml
+├── remove-hosts.yml
+├── setup-blue-green.yml
+├── tasks
+├── templates
+│   ├── config.py.j2
+```
+<!-- .element: style="font-size:11pt;"  -->
+
+
+#### Format for exercise
+* <!-- .element: class="fragment" data-fragment-index="0" -->There are a few partially complete playbooks under `ansible` folder
+* <!-- .element: class="fragment" data-fragment-index="1" -->We will complete these as we discuss important concepts
+* Comments <!-- .element: class="fragment" data-fragment-index="2" -->in playbooks match examples in course slides
+ <pre><code data-trim data-noescape> 
+  <mark># ADD something here</mark>
+  - name: Example code to add to playbook
+    hosts: somehost
+ </code></pre>
+
+  
+
+
 ### Cloud Provider Account
 
 
@@ -274,40 +324,6 @@ particpants want to connect via openstacksdk
   <!-- .element: style="font-size:11pt;"  -->
 
 
-#### Project Layout
-```
-ansible
-├── files
-│   └── rsyslog-haproxy.conf
-├── group_vars
-│   ├── all/
-│   ├── appcluster.yml
-│   ├── app.yml
-│   ├── bastion.yml
-│   ├── cluster/
-│   ├── db.yml
-│   ├── loadbalancer/
-│   ├── private_net.yml
-│   ├── publichosts.yml
-│   └── web.yml
-├── inventory
-│   ├── cloud-hosts
-│   └── openstack.yml
-├── lb-host.yml
-├── app-blue-green-upgrade.yml
-├── app-rolling-upgrade.yml
-├── blue-green-start-switch.yml
-├── deploy.yml
-├── provision-hosts.yml
-├── remove-hosts.yml
-├── setup-blue-green.yml
-├── tasks
-├── templates
-│   ├── config.py.j2
-```
-<!-- .element: style="font-size:11pt;"  -->
-
-
 
 ### Provisioning Hosts
 
@@ -412,7 +428,7 @@ ansible/provision-hosts.yml
 </code></pre>
 * To <!-- .element: class="fragment" data-fragment-index="1" -->run the playbook:
   ```
-  ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml
+  ansible-playbook -i inventory/cloud-hosts provision-hosts.yml
   ```
   <!-- .element: style="font-size:11pt;"  -->
 * <!-- .element: class="fragment" data-fragment-index="2" -->We need to add a
@@ -545,8 +561,6 @@ Note:
 * Only bastion is directly accessible by SSH <!-- .element: class="fragment" data-fragment-index="0" -->
 * All other hosts can only be reached from<!-- .element: class="fragment" data-fragment-index="2" --> _bastion_ 
 
-Note: Adds some extra security for our cluster 
-
 
 #### Traversing a bastion host
 * <!-- .element: class="fragment" data-fragment-index="0" -->Ansible relies on SSH to talk to remote hosts
@@ -652,9 +666,9 @@ Note: Adds some extra security for our cluster
 
 
 #### Provisioning Hosts
-*  Start the provisioning playbook
+*  One last run of the provisioning playbook
    ```
-   ansible-playbook -i ansible/inventory/cloud-hosts ansible/provision-hosts.yml
+   ansible-playbook -i inventory/cloud-hosts provision-hosts.yml
    ```
    <!-- .element: style="font-size:11pt;" class="stretch"  -->
 
@@ -679,18 +693,22 @@ Note: Adds some extra security for our cluster
 
 #### Get bastion IP
 * We'll need the bastion IP if we want to SSH into hosts in the cluster
+  ```
+  ansible-inventory --host pycon-bastion | grep public_v4
+  ```
+* Or if you <!-- .element: class="fragment" data-fragment-index="0" -->have `jq` installed
   ```shell
   ansible-inventory --host pycon-bastion | jq '{"publicIP": .openstack.public_v4}'
   ```
   <!-- .element: style="font-size:12pt;"  -->
   ```json
   {
-    "publicIP": "202.49.242.143"
+    "publicIP": "<your public ip>"
   }
   ```
-* Use this to SSH into cluster
+* Use <!-- .element: class="fragment" data-fragment-index="1" -->this to SSH into cluster
   ```shell
-  ssh -A -t ubuntu@202.49.242.143 ssh pycon-web1
+  ssh -A -t ubuntu@<your public ip> ssh pycon-web1
   ```
 
 
@@ -706,10 +724,10 @@ Note: Adds some extra security for our cluster
 
 
 #### Overview of deploy playbook
-* `ansible-playbook --list-tasks <playbook>` gives an overview of plays and
+* `--list-tasks <playbook>` gives an overview of plays and
   tasks 
   ```
-  ansible-playbook ansible/deploy.yml --list-tasks
+  ansible-playbook deploy.yml --list-tasks
   ```
   ```
   play #1 (private_net): Set ansible_host for private hosts     TAGS: []                                                                                  [0/19740]
@@ -756,11 +774,11 @@ Note: Adds some extra security for our cluster
 #### Deploying the application
 * Run the deploy playbook
   ```shell
-  ansible-playbook ansible/deploy.yml
+  ansible-playbook deploy.yml
   ```
 * Once deploy is finished you'll need the IP of your loadbalancer
   ```
-  ansible-inventory --host pycon-lb | jq '{"publicIP": .openstack.public_v4}'
+  ansible-inventory --host pycon-lb | grep public_v4
   ```
   <!-- .element: style="font-size:10pt;"  -->
 * Should be able to open in your browser as:
@@ -813,11 +831,13 @@ Note: Adds some extra security for our cluster
 
 #### Upgrading applications
 ```shell
-ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+ansible-playbook app-rolling-upgrade.yml -e app_version=v1
 ```
-* <!-- .element: class="fragment" data-fragment-index="0" -->At the moment there is no real difference to running
+<!-- .element: style="font-size:12pt;"  -->
+
+* At <!-- .element: class="fragment" data-fragment-index="0" -->the moment there is no real difference to running
   ```
-  ansible-playbook ansible/deploy.yml -e app_version=v2 --limit app
+  ansible-playbook deploy.yml -e app_version=v1 --limit app
   ```
   <!-- .element: style="font-size:12pt;"  -->
 * <!-- .element: class="fragment" data-fragment-index="1" -->Tempting to just rely on idempotent behaviour to _do the right thing_
@@ -916,7 +936,7 @@ failed: [pycon-app2]
 #### Reset the environment
 * Before we proceed, please reset your environment
   ```
-  ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+  ansible-playbook app-rolling-upgrade.yml -e app_version=v1
   ```
   <!-- .element: style="font-size:12pt;"  -->
 
@@ -977,7 +997,7 @@ failed: [pycon-app2]
 #### Reset the environment
 * Before we proceed, please reset your environment
   ```
-  ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+  ansible-playbook app-rolling-upgrade.yml -e app_version=v1
   ```
   <!-- .element: style="font-size:12pt;"  -->
 
@@ -1114,12 +1134,12 @@ Redirect traffic back to _blue_
 * We need to do is put our cluster in _blue-green_ mode
 * First <!-- .element: class="fragment" data-fragment-index="0" -->reset our environment
   ```
-  ansible-playbook ansible/app-rolling-upgrade.yml -e app_version=v1
+  ansible-playbook app-rolling-upgrade.yml -e app_version=v1
   ```
   <!-- .element: style="font-size:11pt;"  -->
 * <!-- .element: class="fragment" data-fragment-index="1" -->Run the following playbook:
   ```
-  ansible-playbook ansible/setup-blue-green.yml -e live=blue
+  ansible-playbook setup-blue-green.yml -e live=blue
   ```
 * <!-- .element: class="fragment" data-fragment-index="2" -->Verify half of cluster active on HAProxy stats page
 
@@ -1127,7 +1147,7 @@ Redirect traffic back to _blue_
 #### Blue green update playbook
 * For blue green we will use the following playbook
   ```
-  ansible/app-blue-green-upgrade.yml
+  app-blue-green-upgrade.yml
   ```
 * In our inventory
   ```
@@ -1179,7 +1199,7 @@ green groups")
 * The play we added creates an  _ad hoc_ group called **active**
 * <!-- .element: class="fragment" data-fragment-index="0" -->Initially equal to **blue** group
   ![cotd-blue-active](img/cotd-blue-green-venn-active.png "Blue Active") <!-- .element: class="img-right" -->
-* <!-- .element: class="fragment" data-fragment-index="1" -->We want to update hosts **not in the active**
+* <!-- .element: class="fragment" data-fragment-index="1" -->We want to update hosts **not in the active** group
 
 
 
@@ -1248,7 +1268,7 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
   # ADD set to update
   hosts: app:!active
   ```
-* <!-- .element: class="fragment" data-fragment-index="1" -->Should update app2 ![venn-blue-green-start](img/cotd-blue-green-venn-active.png "Blue green start") <!-- .element: class="img-right" width="50%"-->
+* <!-- .element: class="fragment" data-fragment-index="1" -->Should update app2 ![venn-blue-green-start](img/cotd-venn-blue-green-start.png "Blue green start") <!-- .element: class="img-right" width="50%"-->
 
 
 #### Verify app is running
@@ -1305,12 +1325,12 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 #### Run blue green upgrade
 * Let's run the blue green upgrade playbook
   ```
-  ansible-playbook ansible/app-blue-green-upgrade.yml -e app_version=v2
+  ansible-playbook app-blue-green-upgrade.yml -e app_version=v2
   ```
   <!-- .element: style="font-size:11pt;"  -->
 * Can switch back to blue active by running 
   ```
-  ansible-playbook ansible/setup-blue-green.yml -e live=blue
+  ansible-playbook setup-blue-green.yml -e live=blue
   ```
   <!-- .element: style="font-size:11pt;"  -->
 * Try running upgrade with v3 and v4
@@ -1319,7 +1339,7 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 #### Additional check
 * <!-- .element: class="fragment" data-fragment-index="0" -->May want to make additional checks on site
 * <!-- .element: class="fragment" data-fragment-index="1" -->v4 works but does not display version on site
-* <!-- .element: class="fragment" data-fragment-index="2" -->Add additional check to play
+* Add <!-- .element: class="fragment" data-fragment-index="2" -->additional check to play
   ```
   # ADD check version display
   - name: Check that the site is reachable via nginx
@@ -1328,11 +1348,12 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
       status_code: 200
       return_content: yes
       headers:
-        HOST: my-app.cats
+        HOST: "{{ hostvars[groups.loadbalancer[0]].openstack.public_v4 }}.xip.io"
     register: app_site
     failed_when: "'version: ' + app_version not in app_site.content"
     delegate_to: "{{ web_server }}"
   ```
+  <!-- .element: style="font-size:10pt;"  -->
 
 
 
