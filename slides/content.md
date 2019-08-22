@@ -1360,6 +1360,6 @@ Hosts that are in the<!-- .element: class="fragment" data-fragment-index="0" -->
 ### The End
 * Please do not forget to clean up your clusters!
   ```
-  ansible-playbook ansible/remove-hosts.yml
+  ansible-playbook remove-hosts.yml
   ```
   <!-- .element: style="font-size:11pt;"  -->
