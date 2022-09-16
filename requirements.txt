@@ -36,7 +36,7 @@ oslo.context==2.22.1
 oslo.i18n==3.23.1
 oslo.log==3.44.0
 oslo.serialization==2.29.1
-oslo.utils==3.41.0
+oslo.utils==4.10.1
 pbr==5.4.2
 prettytable==0.7.2
 pycparser==2.19
